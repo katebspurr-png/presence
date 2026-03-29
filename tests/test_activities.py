@@ -2,6 +2,7 @@ import time
 from engine.activities.base import ActivityResult, interruptible_sleep
 from engine.activities.dead_stop import DeadStopActivity
 from engine.activities.idle import IdleActivity
+from engine.activities.mouse import MouseActivity
 from engine.status import EngineControl
 
 
@@ -60,9 +61,6 @@ def test_interruptible_sleep_does_not_overshoot_short_duration():
     interruptible_sleep(0.1, ctrl)
     elapsed = time.monotonic() - start
     assert elapsed < 0.5  # should complete in well under 1s
-
-
-from engine.activities.mouse import MouseActivity
 
 
 def test_mouse_activity_returns_correct_result():

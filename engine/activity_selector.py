@@ -3,7 +3,6 @@ from datetime import date, datetime, timedelta
 from typing import Optional, Tuple
 
 from engine.distributions import exponential_duration, gaussian_duration
-from engine.personas import get_persona
 
 _ACTIVITY_TYPES = ["typing", "mouse", "idle", "dead_stop"]
 
@@ -83,7 +82,7 @@ class ActivitySelector:
         now = datetime.now()
         earliest: Optional[int] = None
 
-        for offset_days in range(2):
+        for offset_days in range(3):
             check_date = now.date() + timedelta(days=offset_days)
             day_name = check_date.strftime("%a").lower()
 

@@ -137,3 +137,18 @@ def test_mouse_duration_uses_exponential():
     for _ in range(100):
         _, duration = selector._sample_duration("mouse")
         assert 1.0 <= duration <= 600.0
+
+
+def test_time_until_dead_zone_scans_48h_ahead():
+    selector = ActivitySelector(BASE_CONFIG)
+    # Monday at 23:59 — dead zone (09:00 next day, i.e. Tuesday) is ~33h ahead
+    # With range(2) this might miss it; with range(3) it should find it
+    monday_2359 = datetime(2026, 3, 30, 23, 59)
+    with patch("engine.activity_selector.datetime") as mock_dt:
+        mock_dt.now.return_value = monday_2359
+        mock_dt.combine = datetime.combine
+        mock_dt.strptime = datetime.strptime
+        result = selector.time_until_dead_zone_s()
+    # Tuesday 09:00 is about 32460 seconds after Monday 23:59 (9h 1m)
+    assert result is not None
+    assert 32000 <= result <= 33000
