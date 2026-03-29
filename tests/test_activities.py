@@ -52,3 +52,11 @@ def test_dead_stop_activity_returns_correct_result():
     result = activity.run(duration_s=30.0, control=ctrl)
     assert result.activity == "dead_stop"
     assert result.duration_s == 30.0
+
+
+def test_interruptible_sleep_does_not_overshoot_short_duration():
+    ctrl = EngineControl()
+    start = time.monotonic()
+    interruptible_sleep(0.1, ctrl)
+    elapsed = time.monotonic() - start
+    assert elapsed < 0.5  # should complete in well under 1s

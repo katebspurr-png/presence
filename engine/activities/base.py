@@ -24,7 +24,7 @@ class ActivityBase(ABC):
 def interruptible_sleep(duration: float, control) -> None:
     """Sleep for up to duration seconds, waking within ~1s if stop or pause is set."""
     end = time.monotonic() + duration
-    while time.monotonic() < end:
+    while (remaining := end - time.monotonic()) > 0:
         if control.stopped.is_set() or control.paused.is_set():
             break
-        time.sleep(1)
+        time.sleep(min(1.0, remaining))

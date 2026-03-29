@@ -57,3 +57,18 @@ def test_get_persona_unknown_raises():
 def test_persona_params_is_dataclass():
     p = get_persona("power_user", SAMPLE_CONFIG)
     assert isinstance(p, PersonaParams)
+
+
+def test_persona_params_is_immutable():
+    p = get_persona("focused_writer", {})
+    try:
+        p.wpm = 999
+        assert False, "Should have raised FrozenInstanceError"
+    except Exception:
+        pass  # expected
+
+
+def test_get_persona_builtin_returns_consistent_values():
+    p1 = get_persona("focused_writer", {})
+    p2 = get_persona("focused_writer", {})
+    assert p1.wpm == p2.wpm == 70
