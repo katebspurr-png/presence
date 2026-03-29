@@ -58,23 +58,27 @@ def run_engine(
             "time_until_dead_zone_s": selector.time_until_dead_zone_s(),
         })
 
-        persona = get_persona(persona_name, config)
-        hid_keyboard = config["hid"]["keyboard"]
-        hid_mouse = config["hid"]["mouse"]
+        try:
+            persona = get_persona(persona_name, config)
+            hid_keyboard = config["hid"]["keyboard"]
+            hid_mouse = config["hid"]["mouse"]
 
-        if activity_type == "typing":
-            activity = TypingActivity(
-                config=config,
-                wpm=persona.wpm,
-                hid_path=hid_keyboard,
-                claude_client=claude_client,
-            )
-        elif activity_type == "mouse":
-            activity = MouseActivity(hid_path=hid_mouse)
-        elif activity_type == "idle":
-            activity = IdleActivity()
-        else:
-            activity = DeadStopActivity()
+            if activity_type == "typing":
+                activity = TypingActivity(
+                    config=config,
+                    wpm=persona.wpm,
+                    hid_path=hid_keyboard,
+                    claude_client=claude_client,
+                )
+            elif activity_type == "mouse":
+                activity = MouseActivity(hid_path=hid_mouse)
+            elif activity_type == "idle":
+                activity = IdleActivity()
+            else:
+                activity = DeadStopActivity()
+        except Exception as e:
+            logger.error(f"activity_setup_error type={activity_type} error={e!r}", exc_info=True)
+            continue
 
         logger.info(
             f"activity_start type={activity_type} persona={persona_name} "
@@ -86,6 +90,8 @@ def run_engine(
             result = activity.run(duration_s, control)
         except Exception as e:
             logger.error(f"activity_error type={activity_type} error={e!r}", exc_info=True)
+            # Intentional: a crashed activity is not written to the SQLite log.
+            # The error is captured above via the Python logger (journald).
             continue
 
         actual_duration = time.monotonic() - start
