@@ -1,0 +1,19 @@
+[Unit]
+Description=Presence Behavioral Engine (Infinite Saturdays)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/presence
+ExecStart=/home/pi/presence/venv/bin/python3 run.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=PRESENCE_CONFIG=/home/pi/presence/config.json
+Environment=ANTHROPIC_API_KEY=your_key_here
+
+[Install]
+WantedBy=multi-user.target
