@@ -1,0 +1,40 @@
+{
+  "persona": "focused_writer",
+  "dead_zones": [
+    { "start": "09:00", "end": "09:30", "days": ["mon","tue","wed","thu","fri"] }
+  ],
+  "time_profiles": {
+    "typing":    [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.4, 0.6, 0.7, 0.7, 0.6,
+                  0.5, 0.6, 0.7, 0.6, 0.5, 0.3, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1],
+    "mouse":     [0.05,0.05,0.05,0.05,0.05,0.05,0.1, 0.3, 0.5, 0.5, 0.5, 0.4,
+                  0.4, 0.5, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05,0.05,0.05,0.05,0.05],
+    "idle":      [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.2, 0.2, 0.2, 0.2, 0.3,
+                  0.3, 0.2, 0.2, 0.2, 0.3, 0.3, 0.4, 0.4, 0.4, 0.4, 0.3, 0.3],
+    "dead_stop": [0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.4, 0.1, 0.05,0.05,0.05,0.1,
+                  0.1, 0.05,0.05,0.1, 0.1, 0.2, 0.3, 0.5, 0.6, 0.6, 0.6, 0.6]
+  },
+  "personas": {
+    "focused_writer":         { "typing_mean_s": 180, "typing_stddev_s": 30, "mouse_lambda": 0.05, "idle_lambda": 0.2,  "wpm": 70 },
+    "distracted_multitasker": { "typing_mean_s": 40,  "typing_stddev_s": 15, "mouse_lambda": 0.3,  "idle_lambda": 0.8,  "wpm": 55 },
+    "slow_and_steady":        { "typing_mean_s": 120, "typing_stddev_s": 10, "mouse_lambda": 0.1,  "idle_lambda": 0.3,  "wpm": 35 },
+    "power_user":             { "typing_mean_s": 90,  "typing_stddev_s": 20, "mouse_lambda": 0.15, "idle_lambda": 0.1,  "wpm": 90 },
+    "custom":                 { "typing_mean_s": 90,  "typing_stddev_s": 20, "mouse_lambda": 0.15, "idle_lambda": 0.25, "wpm": 60 }
+  },
+  "claude": {
+    "model": "claude-sonnet-4-20250514",
+    "content_types": ["email", "notes", "code_comments"],
+    "max_tokens": 300
+  },
+  "command_server": {
+    "host": "127.0.0.1",
+    "port": 7777
+  },
+  "hid": {
+    "keyboard": "/dev/hidg0",
+    "mouse": "/dev/hidg1"
+  },
+  "logging": {
+    "db_path": "/var/log/presence/presence.db",
+    "stdout": true
+  }
+}
