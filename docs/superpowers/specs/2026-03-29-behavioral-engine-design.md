@@ -221,7 +221,7 @@ CREATE TABLE activity_log (
 
 | Failure | Behavior |
 |---|---|
-| Claude API failure | Log + fall back to pre-baked content bank (15 hardcoded strings in `typing.py`) |
+| Claude API failure | Log + fall back to pre-baked content bank (50+ hardcoded strings in `typing.py`, split across `email`, `notes`, `code_comments` types). A `used_recently` set tracks strings used in the last 2 hours; selection skips any string in that set, falling back to a random pick only if all strings of that type were recently used. |
 | HID device unavailable | Log warning, skip write, continue — engine runs on non-Pi hardware |
 | Config parse error on reload | Log error, keep last valid config — never swap in a broken config |
 | SQLite write failure | Log to stdout only, continue |
