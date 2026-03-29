@@ -70,3 +70,11 @@ def test_status_store_thread_safety():
     for t in threads:
         t.join()
     assert errors == []
+
+
+def test_config_store_deep_copy_isolates_nested_structures():
+    nested_config = {"dead_zones": [{"start": "09:00", "days": ["mon"]}]}
+    store = ConfigStore(nested_config)
+    cfg = store.get()
+    cfg["dead_zones"][0]["start"] = "MUTATED"
+    assert store.get()["dead_zones"][0]["start"] == "09:00"

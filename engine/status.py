@@ -1,3 +1,4 @@
+import copy
 import threading
 from dataclasses import dataclass, field
 from typing import Optional
@@ -18,22 +19,22 @@ class StatusStore:
 
     def update(self, status: dict) -> None:
         with self._lock:
-            self._status = status.copy()
+            self._status = copy.deepcopy(status)
 
     def snapshot(self) -> Optional[dict]:
         with self._lock:
-            return self._status.copy() if self._status is not None else None
+            return copy.deepcopy(self._status) if self._status is not None else None
 
 
 class ConfigStore:
     def __init__(self, config: dict) -> None:
         self._lock = threading.Lock()
-        self._config = config.copy()
+        self._config = copy.deepcopy(config)
 
     def get(self) -> dict:
         with self._lock:
-            return self._config.copy()
+            return copy.deepcopy(self._config)
 
     def set(self, config: dict) -> None:
         with self._lock:
-            self._config = config.copy()
+            self._config = copy.deepcopy(config)
