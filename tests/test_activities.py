@@ -60,3 +60,23 @@ def test_interruptible_sleep_does_not_overshoot_short_duration():
     interruptible_sleep(0.1, ctrl)
     elapsed = time.monotonic() - start
     assert elapsed < 0.5  # should complete in well under 1s
+
+
+from engine.activities.mouse import MouseActivity
+
+
+def test_mouse_activity_returns_correct_result():
+    ctrl = EngineControl()
+    ctrl.stopped.set()
+    activity = MouseActivity(hid_path="/dev/null")
+    result = activity.run(duration_s=10.0, control=ctrl)
+    assert result.activity == "mouse"
+    assert result.duration_s == 10.0
+
+
+def test_mouse_activity_handles_missing_hid_device():
+    ctrl = EngineControl()
+    ctrl.stopped.set()
+    activity = MouseActivity(hid_path="/dev/nonexistent_hidg1")
+    result = activity.run(duration_s=5.0, control=ctrl)
+    assert result.activity == "mouse"
