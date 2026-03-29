@@ -23,6 +23,8 @@ logging.basicConfig(
 
 log = logging.getLogger("presence")
 
+# Engine imports must come after basicConfig so module-level
+# logging.getLogger() calls in engine/*.py inherit the configured handler.
 from engine.command_server import CommandServer
 from engine.config_watcher import ConfigWatcher
 from engine.logger import ActivityLogger
@@ -82,7 +84,6 @@ def main() -> None:
         log.info(f"signal={sig} shutting_down")
         control.stopped.set()
         command_server.shutdown()
-        sys.exit(0)
 
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
