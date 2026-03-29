@@ -25,13 +25,14 @@ class ConfigWatcher(threading.Thread):
         while not self.control.stopped.is_set():
             try:
                 mtime = os.path.getmtime(self.config_path)
-                if self._last_mtime != 0.0 and mtime != self._last_mtime:
+                changed = self._last_mtime != 0.0 and mtime != self._last_mtime
+                self._last_mtime = mtime  # always advance, even if parse fails
+                if changed:
                     with open(self.config_path) as f:
                         new_config = json.load(f)
                     self.config_store.set(new_config)
                     self.control.reload.set()
                     logger.info(f"config_reloaded path={self.config_path}")
-                self._last_mtime = mtime
             except json.JSONDecodeError as e:
                 logger.error(f"config_parse_error={e!r} keeping_existing_config=True")
             except OSError as e:
