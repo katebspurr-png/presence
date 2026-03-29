@@ -1,6 +1,6 @@
 import logging
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 
 from engine.activities.base import ActivityBase, ActivityResult, interruptible_sleep
 
@@ -124,7 +124,7 @@ class TypingActivity(ActivityBase):
     def _pick_fallback(self, content_type: str) -> str:
         global _used_recently
         bank = FALLBACK_CONTENT.get(content_type, FALLBACK_CONTENT["notes"])
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Purge entries older than 2 hours
         _used_recently = {
