@@ -171,6 +171,7 @@ After any control action, immediately re-fetch `/api/status` without waiting for
 - `/api/status` every **3 seconds** — updates status card + controls + persona active pill
 - `/api/activity_log` every **10 seconds** — updates feed
 - On fetch error (command server down): show subtle "Offline" badge on status card, retain last known state in UI
+- `visibilitychange` event listener: when `document.visibilityState === "visible"` after backgrounding, immediately fetch both `/api/status` and `/api/activity_log` without waiting for the next poll interval
 
 ### Persona selector
 
@@ -238,7 +239,7 @@ A `<details>` element, collapsed by default. Positioned below the activity feed.
 }
 ```
 
-Icon: simple house outline in terracotta on off-white, no text, no keyboard or mouse elements.
+Icon: simple house outline in terracotta (`#C4785A`) on transparent background, no text, no keyboard or mouse elements. The SVG file must be fully rendered (complete path data, no placeholders).
 
 ---
 
