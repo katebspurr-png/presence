@@ -19,9 +19,12 @@ presence/
 │   ├── personas.py          # 5 persona definitions
 │   ├── activities/
 │   │   ├── typing.py        # Claude API content + 55-string fallback bank
-│   │   ├── mouse.py         # Mouse movement stub
+│   │   ├── mouse.py         # Bezier curve mouse movement
 │   │   ├── idle.py          # Micro-pause
 │   │   └── dead_stop.py     # Meeting block silence
+│   ├── hid/
+│   │   ├── keyboard.py      # USB HID scan codes, QWERTY typo injection
+│   │   └── mouse.py         # Bezier movement, easing, scroll events
 │   ├── status.py            # Thread-safe shared state
 │   ├── logger.py            # SQLite + stdout logging
 │   ├── config_watcher.py    # Live config reload
@@ -53,6 +56,7 @@ Key settings:
 | `dead_zones` | List of `{start, end, days}` meeting blocks |
 | `time_profiles` | 24-element hourly weight arrays per activity type |
 | `claude.model` | Claude model (default: `claude-sonnet-4-20250514`) |
+| `screen.width` / `screen.height` | **Must match the target computer's actual display resolution.** Incorrect values cause cursor movement to cluster near the screen centre or hit invisible bounds. Default: 1920×1080. |
 
 ## systemd Deployment
 
@@ -81,23 +85,25 @@ Runs on `127.0.0.1:7777` (configurable in `config.json`).
 python3 -m pytest tests/ -v
 ```
 
-74 tests. Integration smoke tests take ~25s.
+115 tests. Integration smoke tests take ~40s.
 
 ## Activity Types
 
 | Type | Distribution | Description |
 |---|---|---|
-| `typing` | Gaussian | Generates content via Claude API or fallback bank |
-| `mouse` | Exponential | Mouse movement stub (HID encoding in future phase) |
+| `typing` | Gaussian | Generates content via Claude API or fallback bank; types via USB HID with QWERTY typo injection |
+| `mouse` | Exponential | Bezier curve movement with easing, micro-pauses, and scroll events via USB HID |
 | `idle` | Exponential | Micro-pause, no HID output |
 | `dead_stop` | Duration = zone remainder | Complete silence during meeting blocks |
 
 ## Personas
 
-| Persona | WPM | Character |
-|---|---|---|
-| `focused_writer` | 70 | Long typing bursts, rare mouse |
-| `distracted_multitasker` | 55 | Short bursts, frequent mouse/idle |
-| `slow_and_steady` | 35 | Stretched durations, low variance |
-| `power_user` | 90 | Fast, dense, short gaps |
-| `custom` | configurable | All params from `config.json` |
+| Persona | WPM | Typo rate | Thinking pauses | Character |
+|---|---|---|---|---|
+| `focused_writer` | 70 | 1% | Rare (5%), long (3s) | Long typing bursts, rare mouse |
+| `distracted_multitasker` | 55 | 2.5% | Frequent (20%), short (1.5s) | Short bursts, frequent mouse/idle |
+| `slow_and_steady` | 35 | 0.5% | Very rare (3%), medium (2.5s) | Stretched durations, low variance |
+| `power_user` | 90 | 3% | Rare (5%), short (1s) | Fast, dense, short gaps |
+| `custom` | configurable | configurable | configurable | All params from `config.json` |
+
+74 tests → 115 tests. Run with: `python3 -m pytest tests/ -v`
