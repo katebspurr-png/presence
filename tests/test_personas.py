@@ -9,6 +9,9 @@ SAMPLE_CONFIG = {
             "mouse_lambda": 0.2,
             "idle_lambda": 0.4,
             "wpm": 65,
+            "typo_rate": 0.02,
+            "thinking_pause_p": 0.10,
+            "thinking_pause_mean_s": 2.0,
         }
     }
 }
