@@ -110,4 +110,50 @@ def create_app(config_path=None, command_url=None):
         except Exception:
             return jsonify([])
 
+    @app.route("/api/dead_zones", methods=["POST"])
+    def add_dead_zone():
+        body = request.get_json(force=True, silent=True) or {}
+        try:
+            cfg = _read_config()
+            cfg.setdefault("dead_zones", []).append({
+                "start": body["start"],
+                "end": body["end"],
+                "days": body["days"],
+            })
+            _write_config(cfg)
+        except Exception:
+            return jsonify({"error": "config error"}), 500
+        return jsonify({"dead_zones": cfg["dead_zones"]})
+
+    @app.route("/api/dead_zones/<int:index>", methods=["PUT"])
+    def update_dead_zone(index):
+        body = request.get_json(force=True, silent=True) or {}
+        try:
+            cfg = _read_config()
+            zones = cfg.get("dead_zones", [])
+            if index >= len(zones):
+                return jsonify({"error": "index out of range"}), 404
+            zones[index] = {
+                "start": body["start"],
+                "end": body["end"],
+                "days": body["days"],
+            }
+            _write_config(cfg)
+        except Exception:
+            return jsonify({"error": "config error"}), 500
+        return jsonify({"dead_zones": zones})
+
+    @app.route("/api/dead_zones/<int:index>", methods=["DELETE"])
+    def delete_dead_zone(index):
+        try:
+            cfg = _read_config()
+            zones = cfg.get("dead_zones", [])
+            if index >= len(zones):
+                return jsonify({"error": "index out of range"}), 404
+            zones.pop(index)
+            _write_config(cfg)
+        except Exception:
+            return jsonify({"error": "config error"}), 500
+        return jsonify({"dead_zones": zones})
+
     return app

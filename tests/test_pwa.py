@@ -138,3 +138,50 @@ def test_activity_log_missing_db_returns_empty(client):
     resp = c.get("/api/activity_log")
     assert resp.status_code == 200
     assert json.loads(resp.data) == []
+
+
+def test_add_dead_zone(client):
+    c, config_path, _ = client
+    body = {"start": "14:00", "end": "15:00", "days": ["mon", "wed"]}
+    resp = c.post("/api/dead_zones", json=body)
+    assert resp.status_code == 200
+    data = json.loads(resp.data)
+    assert len(data["dead_zones"]) == 2
+    assert data["dead_zones"][-1]["start"] == "14:00"
+    saved = json.loads(config_path.read_text())
+    assert len(saved["dead_zones"]) == 2
+
+
+def test_update_dead_zone(client):
+    c, config_path, _ = client
+    body = {"start": "10:00", "end": "11:00", "days": ["tue"]}
+    resp = c.put("/api/dead_zones/0", json=body)
+    assert resp.status_code == 200
+    data = json.loads(resp.data)
+    assert data["dead_zones"][0]["start"] == "10:00"
+    assert data["dead_zones"][0]["days"] == ["tue"]
+
+
+def test_delete_dead_zone(client):
+    c, config_path, _ = client
+    resp = c.delete("/api/dead_zones/0")
+    assert resp.status_code == 200
+    data = json.loads(resp.data)
+    assert data["dead_zones"] == []
+    saved = json.loads(config_path.read_text())
+    assert saved["dead_zones"] == []
+
+
+def test_update_dead_zone_out_of_range(client):
+    c, _, _ = client
+    body = {"start": "10:00", "end": "11:00", "days": ["mon"]}
+    resp = c.put("/api/dead_zones/99", json=body)
+    assert resp.status_code == 404
+    assert json.loads(resp.data)["error"] == "index out of range"
+
+
+def test_delete_dead_zone_out_of_range(client):
+    c, _, _ = client
+    resp = c.delete("/api/dead_zones/99")
+    assert resp.status_code == 404
+    assert json.loads(resp.data)["error"] == "index out of range"
