@@ -33,8 +33,8 @@ def test_get_persona_distracted_multitasker():
     assert p.wpm == 55
 
 
-def test_get_persona_slow_and_steady():
-    p = get_persona("slow_and_steady", SAMPLE_CONFIG)
+def test_get_persona_steady():
+    p = get_persona("steady", SAMPLE_CONFIG)
     assert p.typing_stddev_s == 10
     assert p.wpm == 35
 

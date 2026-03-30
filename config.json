@@ -16,7 +16,7 @@
   "personas": {
     "focused_writer":         { "typing_mean_s": 180, "typing_stddev_s": 30, "mouse_lambda": 0.05, "idle_lambda": 0.2,  "wpm": 70, "typo_rate": 0.01,  "thinking_pause_p": 0.05, "thinking_pause_mean_s": 3.0 },
     "distracted_multitasker": { "typing_mean_s": 40,  "typing_stddev_s": 15, "mouse_lambda": 0.3,  "idle_lambda": 0.8,  "wpm": 55, "typo_rate": 0.025, "thinking_pause_p": 0.20, "thinking_pause_mean_s": 1.5 },
-    "slow_and_steady":        { "typing_mean_s": 120, "typing_stddev_s": 10, "mouse_lambda": 0.1,  "idle_lambda": 0.3,  "wpm": 35, "typo_rate": 0.005, "thinking_pause_p": 0.03, "thinking_pause_mean_s": 2.5 },
+    "steady":        { "typing_mean_s": 120, "typing_stddev_s": 10, "mouse_lambda": 0.1,  "idle_lambda": 0.3,  "wpm": 35, "typo_rate": 0.005, "thinking_pause_p": 0.03, "thinking_pause_mean_s": 2.5 },
     "power_user":             { "typing_mean_s": 90,  "typing_stddev_s": 20, "mouse_lambda": 0.15, "idle_lambda": 0.1,  "wpm": 90, "typo_rate": 0.03,  "thinking_pause_p": 0.05, "thinking_pause_mean_s": 1.0 },
     "custom":                 { "typing_mean_s": 90,  "typing_stddev_s": 20, "mouse_lambda": 0.15, "idle_lambda": 0.25, "wpm": 60, "typo_rate": 0.02,  "thinking_pause_p": 0.10, "thinking_pause_mean_s": 2.0 }
   },

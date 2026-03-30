@@ -52,7 +52,7 @@ Key settings:
 
 | Key | Description |
 |---|---|
-| `persona` | `focused_writer` \| `distracted_multitasker` \| `slow_and_steady` \| `power_user` \| `custom` |
+| `persona` | `focused_writer` \| `distracted_multitasker` \| `steady` \| `power_user` \| `custom` |
 | `dead_zones` | List of `{start, end, days}` meeting blocks |
 | `time_profiles` | 24-element hourly weight arrays per activity type |
 | `claude.model` | Claude model (default: `claude-sonnet-4-20250514`) |
@@ -102,7 +102,7 @@ python3 -m pytest tests/ -v
 |---|---|---|---|---|
 | `focused_writer` | 70 | 1% | Rare (5%), long (3s) | Long typing bursts, rare mouse |
 | `distracted_multitasker` | 55 | 2.5% | Frequent (20%), short (1.5s) | Short bursts, frequent mouse/idle |
-| `slow_and_steady` | 35 | 0.5% | Very rare (3%), medium (2.5s) | Stretched durations, low variance |
+| `steady` | 35 | 0.5% | Very rare (3%), medium (2.5s) | Stretched durations, low variance |
 | `power_user` | 90 | 3% | Rare (5%), short (1s) | Fast, dense, short gaps |
 | `custom` | configurable | configurable | configurable | All params from `config.json` |
 

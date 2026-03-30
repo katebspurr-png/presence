@@ -37,8 +37,8 @@ _BUILTIN_PERSONAS: dict[str, PersonaParams] = {
         thinking_pause_p=0.20,
         thinking_pause_mean_s=1.5,
     ),
-    "slow_and_steady": PersonaParams(
-        name="slow_and_steady",
+    "steady": PersonaParams(
+        name="steady",
         typing_mean_s=120,
         typing_stddev_s=10,
         mouse_lambda=0.1,
