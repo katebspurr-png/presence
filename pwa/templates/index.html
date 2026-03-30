@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#C4785A">
+<link rel="manifest" href="/static/manifest.json">
+<title>Family Hub</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #FAFAF8;
+  color: #2C2C2A;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  padding-bottom: 48px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+header { padding: 28px 24px 8px; }
+.wordmark {
+  font-size: 13px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase; color: #9A9087;
+}
+
+.offline-badge {
+  margin: 4px 16px; padding: 6px 12px;
+  background: #F7E0D9; color: #C4785A;
+  border-radius: 8px; font-size: 12px; font-weight: 600; text-align: center;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(44,44,42,.07);
+  margin: 12px 16px;
+  padding: 20px;
+}
+
+/* ── Status card ── */
+.status-label {
+  font-size: 11px; font-weight: 600; letter-spacing: .1em;
+  text-transform: uppercase; color: #9A9087;
+  margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; background: #C4785A; flex-shrink: 0; }
+.dot.pulse { animation: pulse 2s infinite; }
+.dot.dim   { opacity: .3; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.status-row {
+  display: flex; align-items: baseline;
+  justify-content: space-between; margin-bottom: 6px;
+}
+.status-activity { font-size: 26px; font-weight: 600; letter-spacing: -.01em; }
+.status-badge {
+  background: #F0EAE5; color: #C4785A;
+  font-size: 12px; font-weight: 600;
+  padding: 4px 10px; border-radius: 20px;
+  white-space: nowrap; margin-left: 8px;
+}
+.status-meta { font-size: 13px; color: #9A9087; margin-top: 4px; }
+.status-dz  {
+  font-size: 13px; color: #9A9087;
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid #F0EDE9;
+}
+
+/* ── Controls card ── */
+.btn-primary {
+  display: block; width: 100%; padding: 18px;
+  border: none; border-radius: 12px;
+  font-size: 16px; font-weight: 600;
+  background: #C4785A; color: #fff;
+  margin-bottom: 10px; cursor: pointer;
+  letter-spacing: .01em; transition: opacity .15s;
+}
+.btn-primary:active { opacity: .85; }
+.btn-secondary {
+  display: block; width: 100%; padding: 14px;
+  border: 2px solid #E8E2DC; border-radius: 12px;
+  font-size: 15px; font-weight: 600;
+  background: transparent; color: #7A6E66;
+  cursor: pointer; transition: border-color .15s, color .15s;
+}
+.btn-secondary:active { border-color: #C4785A; color: #C4785A; }
+.btn-ghost {
+  display: block; width: 100%; padding: 14px;
+  border: 2px solid #F0EDE9; border-radius: 12px;
+  font-size: 15px; font-weight: 600;
+  background: transparent; color: #C0B8B0; cursor: default;
+}
+
+/* ── Persona pills ── */
+.section-label {
+  font-size: 11px; font-weight: 600; letter-spacing: .1em;
+  text-transform: uppercase; color: #9A9087; margin-bottom: 12px;
+}
+.persona-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill {
+  padding: 8px 14px; border-radius: 20px;
+  font-size: 13px; font-weight: 500;
+  border: 1.5px solid #E8E2DC;
+  background: transparent; color: #7A6E66;
+  cursor: pointer; transition: all .15s;
+}
+.pill.active { background: #C4785A; color: #fff; border-color: #C4785A; }
+
+/* ── Activity feed ── */
+.feed-item {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid #F0EDE9;
+}
+.feed-item:last-child { border-bottom: none; }
+.feed-left { display: flex; align-items: center; gap: 10px; }
+.feed-icon {
+  width: 26px; height: 26px; border-radius: 8px;
+  background: #F0EAE5; display: flex; align-items: center;
+  justify-content: center; font-size: 13px; flex-shrink: 0;
+}
+.feed-name  { font-size: 14px; font-weight: 500; }
+.feed-right { text-align: right; }
+.feed-dur   { font-size: 13px; color: #9A9087; }
+.feed-time  { font-size: 11px; color: #C0B8B0; margin-top: 2px; }
+
+/* ── Dead zone editor ── */
+.dz-card { padding: 0; }
+.dz-card > summary {
+  padding: 16px 20px; font-size: 13px; font-weight: 600;
+  color: #9A9087; cursor: pointer; list-style: none;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.dz-card > summary::-webkit-details-marker { display: none; }
+.dz-card > summary::after {
+  content: '›'; font-size: 20px; color: #C0B8B0; transition: transform .2s;
+}
+.dz-card[open] > summary::after { transform: rotate(90deg); }
+.dz-inner { padding: 0 20px 20px; }
+.dz-timeline-wrap {
+  border-radius: 8px; background: #F7F5F3;
+  margin-bottom: 16px; overflow: hidden;
+}
+.dz-timeline { display: block; width: 100%; }
+.dz-form     { display: flex; flex-direction: column; gap: 12px; }
+.dz-row      { display: flex; gap: 10px; }
+.dz-field    { flex: 1; }
+.dz-field-label { font-size: 12px; font-weight: 500; color: #9A9087; margin-bottom: 4px; }
+.dz-input {
+  width: 100%; padding: 10px 12px;
+  border: 1.5px solid #E8E2DC; border-radius: 10px;
+  font-size: 14px; color: #2C2C2A; background: #fff; outline: none;
+}
+.dz-input:focus { border-color: #C4785A; }
+.dz-toggle {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: #7A6E66; cursor: pointer; user-select: none;
+}
+.dz-toggle input[type=checkbox] {
+  width: 16px; height: 16px; accent-color: #C4785A; cursor: pointer; flex-shrink: 0;
+}
+.day-pills  { display: flex; gap: 6px; }
+.day-pill {
+  width: 34px; height: 34px; border-radius: 50%;
+  font-size: 12px; font-weight: 600;
+  border: 1.5px solid #E8E2DC; background: transparent; color: #9A9087;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.day-pill.active { background: #C4785A; color: #fff; border-color: #C4785A; }
+.dz-actions { display: flex; gap: 8px; }
+.dz-btn-primary {
+  flex: 1; padding: 12px; border: none; border-radius: 10px;
+  background: #C4785A; color: #fff; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: opacity .15s;
+}
+.dz-btn-primary:active { opacity: .85; }
+.dz-btn-secondary {
+  flex: 1; padding: 12px; border: 1.5px solid #E8E2DC; border-radius: 10px;
+  background: transparent; color: #7A6E66; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: border-color .15s;
+}
+.dz-btn-secondary:active { border-color: #C4785A; }
+.dz-btn-danger {
+  flex: 1; padding: 12px; border: 1.5px solid #E2C4BC; border-radius: 10px;
+  background: transparent; color: #C4785A; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<header><span class="wordmark">Family Hub</span></header>
+
+<div id="offline-badge" class="offline-badge" hidden>Offline</div>
+
+<!-- Status card -->
+<div class="card">
+  <div class="status-label">
+    <span class="dot dim" id="status-dot"></span>Live Status
+  </div>
+  <div class="status-row">
+    <div class="status-activity" id="status-activity">—</div>
+    <span class="status-badge" id="status-persona"></span>
+  </div>
+  <div class="status-meta" id="status-next"></div>
+  <div class="status-dz" id="status-dz" hidden></div>
+</div>
+
+<!-- Controls card -->
+<div class="card">
+  <button class="btn-primary" id="btn-primary">—</button>
+  <button class="btn-secondary" id="btn-secondary">—</button>
+</div>
+
+<!-- Persona card -->
+<div class="card">
+  <div class="section-label">Persona</div>
+  <div class="persona-pills">
+    <button class="pill" data-api="focused_writer">Focused</button>
+    <button class="pill" data-api="distracted_multitasker">Multitasker</button>
+    <button class="pill" data-api="steady">Steady</button>
+    <button class="pill" data-api="power_user">Power User</button>
+  </div>
+</div>
+
+<!-- Activity feed -->
+<div class="card">
+  <div class="section-label">Recent Activity</div>
+  <div id="feed-list"></div>
+</div>
+
+<!-- Dead zone editor -->
+<details class="card dz-card" id="dz-details">
+  <summary id="dz-summary">No dead zones set.</summary>
+  <div class="dz-inner">
+    <div class="dz-timeline-wrap">
+      <svg id="dz-timeline" class="dz-timeline" viewBox="0 0 600 52" height="52"></svg>
+    </div>
+    <div class="dz-form">
+      <div class="dz-row">
+        <div class="dz-field">
+          <div class="dz-field-label">Start</div>
+          <input type="time" class="dz-input" id="dz-start">
+        </div>
+        <div class="dz-field">
+          <div class="dz-field-label">End</div>
+          <input type="time" class="dz-input" id="dz-end">
+        </div>
+      </div>
+      <label class="dz-toggle">
+        <input type="checkbox" id="dz-repeat" onchange="toggleRepeat()">
+        Repeat on selected days
+      </label>
+      <div id="dz-days" hidden>
+        <div class="day-pills">
+          <button class="day-pill active" data-day="mon">M</button>
+          <button class="day-pill active" data-day="tue">T</button>
+          <button class="day-pill active" data-day="wed">W</button>
+          <button class="day-pill active" data-day="thu">T</button>
+          <button class="day-pill active" data-day="fri">F</button>
+        </div>
+      </div>
+      <div class="dz-actions" id="dz-actions">
+        <button class="dz-btn-primary" onclick="saveDeadZone()">Add</button>
+      </div>
+    </div>
+  </div>
+</details>
+
+<script>
+const ACTIVITY_LABELS = {typing:'Typing', mouse:'Mouse', idle:'Idle', dead_stop:'Meeting'};
+const ACTIVITY_ICONS  = {typing:'⌨', mouse:'🖱', idle:'⏸', dead_stop:'📅'};
+const TODAY = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
+
+// Timeline: 8am–6pm = 600 min, viewBox width 600 → 1px per minute
+const TL_START = 8 * 60;   // 480 min since midnight
+const TL_RANGE = 10 * 60;  // 600 min span
+const TL_W = 600;
+
+let _lastDeadZones = [];
+let _selectedZoneIdx = null;
+
+// ── Polling ───────────────────────────────────────────────────────────────────
+
+async function fetchStatus() {
+  try {
+    const r = await fetch('/api/status');
+    if (!r.ok) throw new Error();
+    renderStatus(await r.json());
+    document.getElementById('offline-badge').hidden = true;
+  } catch {
+    document.getElementById('offline-badge').hidden = false;
+  }
+}
+
+async function fetchLog() {
+  try {
+    const r = await fetch('/api/activity_log');
+    if (!r.ok) throw new Error();
+    renderLog(await r.json());
+  } catch {}
+}
+
+setInterval(fetchStatus, 3000);
+setInterval(fetchLog, 10000);
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    fetchStatus();
+    fetchLog();
+  }
+});
+
+fetchStatus();
+fetchLog();
+
+// ── Status rendering ──────────────────────────────────────────────────────────
+
+function renderStatus(data) {
+  const state = data.engine_state || 'stopped';
+  const dot = document.getElementById('status-dot');
+  dot.className = state === 'running' ? 'dot pulse' : 'dot dim';
+
+  document.getElementById('status-activity').textContent =
+    ACTIVITY_LABELS[data.activity] ?? data.activity ?? '—';
+  document.getElementById('status-persona').textContent =
+    (data.persona || '').replace(/_/g, ' ');
+
+  const nextEl = document.getElementById('status-next');
+  nextEl.textContent = data.next_change_at
+    ? 'Next change ' + data.next_change_at.slice(0, 5)
+    : '';
+
+  const dzEl = document.getElementById('status-dz');
+  if (data.time_until_dead_zone_s != null) {
+    const s = Math.round(data.time_until_dead_zone_s);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    dzEl.textContent = h > 0 ? `Dead zone in ${h}h ${m}m` : `Dead zone in ${m}m`;
+    dzEl.hidden = false;
+  } else {
+    dzEl.hidden = true;
+  }
+
+  renderControls(state);
+  renderPersonaPills(data.persona);
+
+  if (Array.isArray(data.dead_zones)) {
+    _lastDeadZones = data.dead_zones;
+    renderDeadZoneSection(_lastDeadZones);
+  }
+}
+
+// ── Controls ──────────────────────────────────────────────────────────────────
+
+function renderControls(state) {
+  const primary   = document.getElementById('btn-primary');
+  const secondary = document.getElementById('btn-secondary');
+
+  secondary.disabled = false;
+
+  if (state === 'running') {
+    primary.textContent   = 'Stop';
+    primary.onclick       = () => doAction('/api/stop');
+    secondary.textContent = 'Pause';
+    secondary.className   = 'btn-secondary';
+    secondary.onclick     = () => doAction('/api/pause');
+  } else if (state === 'paused') {
+    primary.textContent   = 'Resume';
+    primary.onclick       = () => doAction('/api/pause');
+    secondary.textContent = 'Stop';
+    secondary.className   = 'btn-secondary';
+    secondary.onclick     = () => doAction('/api/stop');
+  } else {
+    primary.textContent   = 'Start';
+    primary.onclick       = () => doAction('/api/start');
+    secondary.textContent = 'Pause';
+    secondary.className   = 'btn-ghost';
+    secondary.onclick     = null;
+    secondary.disabled    = true;
+  }
+}
+
+async function doAction(path) {
+  await fetch(path, { method: 'POST' });
+  fetchStatus();
+}
+
+// ── Persona pills ─────────────────────────────────────────────────────────────
+
+function renderPersonaPills(activePersona) {
+  document.querySelectorAll('.pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.api === activePersona);
+    btn.onclick = () => selectPersona(btn.dataset.api);
+  });
+}
+
+async function selectPersona(apiName) {
+  await fetch('/api/persona', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ persona: apiName }),
+  });
+  fetchStatus();
+}
+
+// ── Activity feed ─────────────────────────────────────────────────────────────
+
+function fmtDur(s) {
+  s = Math.round(s);
+  return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`;
+}
+
+function fmtTime(iso) {
+  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function renderLog(entries) {
+  const el = document.getElementById('feed-list');
+  if (!entries.length) { el.innerHTML = ''; return; }
+  el.innerHTML = entries.map(e => `
+    <div class="feed-item">
+      <div class="feed-left">
+        <div class="feed-icon">${ACTIVITY_ICONS[e.activity] ?? '•'}</div>
+        <div class="feed-name">${ACTIVITY_LABELS[e.activity] ?? e.activity}</div>
+      </div>
+      <div class="feed-right">
+        <div class="feed-dur">${fmtDur(e.duration_s)}</div>
+        <div class="feed-time">${fmtTime(e.ts)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Dead zone editor ──────────────────────────────────────────────────────────
+
+function _timeToMin(hhmm) {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function renderDeadZoneSection(zones) {
+  const todayZones = zones.filter(z => z.days.includes(TODAY));
+  const summary = document.getElementById('dz-summary');
+  summary.textContent = todayZones.length
+    ? `${todayZones.length} dead zone${todayZones.length !== 1 ? 's' : ''} today`
+    : 'No dead zones set.';
+  renderTimeline(zones);
+}
+
+function renderTimeline(zones) {
+  const svg = document.getElementById('dz-timeline');
+  const todayZones = zones
+    .map((z, i) => ({ ...z, idx: i }))
+    .filter(z => z.days.includes(TODAY));
+
+  const rects = todayZones.map(z => {
+    const x = Math.max(0, (_timeToMin(z.start) - TL_START) / TL_RANGE * TL_W);
+    const w = Math.min(TL_W - x, (_timeToMin(z.end) - _timeToMin(z.start)) / TL_RANGE * TL_W);
+    const sel = z.idx === _selectedZoneIdx;
+    return `<rect x="${x.toFixed(1)}" y="4" width="${Math.max(2, w).toFixed(1)}" height="30"
+      rx="4" fill="${sel ? '#A85E44' : '#C4785A'}" opacity="${sel ? '1' : '0.75'}"
+      data-idx="${z.idx}" style="cursor:pointer"/>`;
+  }).join('');
+
+  const ticks = [0, 120, 240, 360, 480, 600].map(offset => {
+    const x = (offset / TL_RANGE * TL_W).toFixed(1);
+    const h = 8 + offset / 60;
+    const label = h < 12 ? `${h}am` : h === 12 ? '12pm' : `${h - 12}pm`;
+    return `<line x1="${x}" y1="34" x2="${x}" y2="40" stroke="#E8E2DC" stroke-width="1"/>
+      <text x="${x}" y="50" text-anchor="middle" font-size="8" fill="#C0B8B0"
+            font-family="-apple-system,sans-serif">${label}</text>`;
+  }).join('');
+
+  svg.innerHTML = ticks + rects;
+
+  svg.querySelectorAll('rect[data-idx]').forEach(rect => {
+    rect.addEventListener('click', e => {
+      e.stopPropagation();
+      selectZone(parseInt(rect.dataset.idx));
+    });
+  });
+}
+
+function selectZone(idx) {
+  _selectedZoneIdx = idx;
+  const z = _lastDeadZones[idx];
+  document.getElementById('dz-start').value = z.start;
+  document.getElementById('dz-end').value   = z.end;
+  const repeat = z.days.length > 1;
+  document.getElementById('dz-repeat').checked   = repeat;
+  document.getElementById('dz-days').hidden = !repeat;
+  if (repeat) {
+    document.querySelectorAll('.day-pill').forEach(p => {
+      p.classList.toggle('active', z.days.includes(p.dataset.day));
+    });
+  }
+  document.getElementById('dz-actions').innerHTML = `
+    <button class="dz-btn-primary"   onclick="saveDeadZone()">Update</button>
+    <button class="dz-btn-danger"    onclick="deleteDeadZone()">Delete</button>
+    <button class="dz-btn-secondary" onclick="cancelDeadZone()">Cancel</button>
+  `;
+  renderTimeline(_lastDeadZones);
+}
+
+function cancelDeadZone() {
+  _selectedZoneIdx = null;
+  document.getElementById('dz-start').value       = '';
+  document.getElementById('dz-end').value         = '';
+  document.getElementById('dz-repeat').checked    = false;
+  document.getElementById('dz-days').hidden       = true;
+  document.querySelectorAll('.day-pill').forEach(p => p.classList.add('active'));
+  document.getElementById('dz-actions').innerHTML =
+    `<button class="dz-btn-primary" onclick="saveDeadZone()">Add</button>`;
+  renderTimeline(_lastDeadZones);
+}
+
+function toggleRepeat() {
+  document.getElementById('dz-days').hidden =
+    !document.getElementById('dz-repeat').checked;
+}
+
+document.querySelectorAll('.day-pill').forEach(p => {
+  p.addEventListener('click', () => p.classList.toggle('active'));
+});
+
+function _formData() {
+  const start  = document.getElementById('dz-start').value;
+  const end    = document.getElementById('dz-end').value;
+  const repeat = document.getElementById('dz-repeat').checked;
+  const days   = repeat
+    ? [...document.querySelectorAll('.day-pill.active')].map(p => p.dataset.day)
+    : [TODAY];
+  return { start, end, days: days.length ? days : [TODAY] };
+}
+
+async function saveDeadZone() {
+  const body   = _formData();
+  const method = _selectedZoneIdx !== null ? 'PUT'  : 'POST';
+  const url    = _selectedZoneIdx !== null
+    ? `/api/dead_zones/${_selectedZoneIdx}`
+    : '/api/dead_zones';
+  const r = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (r.ok) {
+    _lastDeadZones = (await r.json()).dead_zones;
+    cancelDeadZone();
+    renderDeadZoneSection(_lastDeadZones);
+  }
+}
+
+async function deleteDeadZone() {
+  if (_selectedZoneIdx === null) return;
+  const r = await fetch(`/api/dead_zones/${_selectedZoneIdx}`, { method: 'DELETE' });
+  if (r.ok) {
+    _lastDeadZones = (await r.json()).dead_zones;
+    cancelDeadZone();
+    renderDeadZoneSection(_lastDeadZones);
+  }
+}
+
+// Click on empty timeline area → deselect
+document.getElementById('dz-timeline').addEventListener('click', e => {
+  if (!e.target.hasAttribute('data-idx')) cancelDeadZone();
+});
+</script>
+</body>
+</html>
