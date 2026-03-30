@@ -90,3 +90,51 @@ def test_control_engine_offline(client):
         resp = c.post("/api/start")
     assert resp.status_code == 503
     assert json.loads(resp.data)["error"] == "engine offline"
+
+
+def test_set_persona_valid(client):
+    c, config_path, _ = client
+    resp = c.post("/api/persona", json={"persona": "steady"})
+    assert resp.status_code == 200
+    assert json.loads(resp.data) == {"persona": "steady"}
+    saved = json.loads(config_path.read_text())
+    assert saved["persona"] == "steady"
+
+
+def test_set_persona_unknown(client):
+    c, _, _ = client
+    resp = c.post("/api/persona", json={"persona": "ghost"})
+    assert resp.status_code == 400
+    assert json.loads(resp.data)["error"] == "unknown persona"
+
+
+def test_activity_log_returns_entries(client):
+    c, _, db_path = client
+    with sqlite3.connect(str(db_path)) as conn:
+        conn.execute(
+            "CREATE TABLE activity_log "
+            "(id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, activity TEXT, "
+            "persona TEXT, duration_s REAL, metadata TEXT)"
+        )
+        for i in range(10):
+            conn.execute(
+                "INSERT INTO activity_log VALUES (NULL, ?, 'typing', 'focused_writer', 60.0, '{}')",
+                (f"2026-03-30T10:{i:02d}:00Z",),
+            )
+        conn.commit()
+    resp = c.get("/api/activity_log")
+    assert resp.status_code == 200
+    data = json.loads(resp.data)
+    assert len(data) == 8
+    assert data[0]["activity"] == "typing"
+    assert "ts" in data[0]
+    assert "duration_s" in data[0]
+
+
+def test_activity_log_missing_db_returns_empty(client):
+    c, _, _ = client
+    # db_path does not contain the table — sqlite3.connect creates empty file,
+    # SELECT fails, exception is caught, returns []
+    resp = c.get("/api/activity_log")
+    assert resp.status_code == 200
+    assert json.loads(resp.data) == []

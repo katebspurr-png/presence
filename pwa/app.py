@@ -79,4 +79,35 @@ def create_app(config_path=None, command_url=None):
             return jsonify({"error": "engine offline"}), 503
         return jsonify(data), code
 
+    @app.route("/api/persona", methods=["POST"])
+    def set_persona():
+        body = request.get_json(force=True, silent=True) or {}
+        name = body.get("persona", "")
+        if name not in VALID_PERSONAS:
+            return jsonify({"error": "unknown persona"}), 400
+        try:
+            cfg = _read_config()
+            cfg["persona"] = name
+            _write_config(cfg)
+        except Exception:
+            return jsonify({"error": "config error"}), 500
+        return jsonify({"persona": name})
+
+    @app.route("/api/activity_log")
+    def activity_log():
+        try:
+            cfg = _read_config()
+            db_path = cfg.get("logging", {}).get("db_path", "")
+            with sqlite3.connect(db_path) as conn:
+                rows = conn.execute(
+                    "SELECT ts, activity, persona, duration_s FROM activity_log "
+                    "ORDER BY id DESC LIMIT 8"
+                ).fetchall()
+            return jsonify([
+                {"ts": r[0], "activity": r[1], "persona": r[2], "duration_s": r[3]}
+                for r in rows
+            ])
+        except Exception:
+            return jsonify([])
+
     return app
