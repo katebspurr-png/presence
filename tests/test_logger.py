@@ -56,7 +56,7 @@ def test_log_activity_ts_is_iso8601(tmp_db):
     from datetime import datetime
     logger = ActivityLogger(db_path=tmp_db, stdout=False)
     logger.log_activity(ActivityEvent(
-        activity="idle", persona="slow_and_steady", duration_s=5.0, metadata={}
+        activity="idle", persona="steady", duration_s=5.0, metadata={}
     ))
     with sqlite3.connect(tmp_db) as conn:
         ts = conn.execute("SELECT ts FROM activity_log").fetchone()[0]
