@@ -47,6 +47,31 @@ def test_get_status_returns_snapshot(server):
     assert data["persona"] == "focused_writer"
 
 
+def test_status_engine_state_running(server):
+    srv, ctrl, store = server
+    ctrl.running.set()
+    ctrl.stopped.clear()
+    ctrl.paused.clear()
+    data = _get("/status")
+    assert data["engine_state"] == "running"
+
+
+def test_status_engine_state_paused(server):
+    srv, ctrl, store = server
+    ctrl.running.set()
+    ctrl.paused.set()
+    data = _get("/status")
+    assert data["engine_state"] == "paused"
+
+
+def test_status_engine_state_stopped(server):
+    srv, ctrl, store = server
+    ctrl.running.clear()
+    ctrl.stopped.set()
+    data = _get("/status")
+    assert data["engine_state"] == "stopped"
+
+
 def test_post_stop_sets_stopped_event(server):
     srv, ctrl, store = server
     data = _post("/stop")

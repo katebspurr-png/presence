@@ -21,8 +21,14 @@ def _make_handler(control, status_store):
 
         def do_GET(self):
             if self.path == "/status":
-                snapshot = status_store.snapshot()
-                self._send_json(200, snapshot or {})
+                snapshot = dict(status_store.snapshot() or {})
+                if control.stopped.is_set() or not control.running.is_set():
+                    snapshot["engine_state"] = "stopped"
+                elif control.paused.is_set():
+                    snapshot["engine_state"] = "paused"
+                else:
+                    snapshot["engine_state"] = "running"
+                self._send_json(200, snapshot)
             else:
                 self._send_json(404, {"error": "not found"})
 
