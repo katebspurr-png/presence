@@ -51,4 +51,32 @@ def create_app(config_path=None, command_url=None):
     def ping():
         return jsonify({"ok": True})
 
+    @app.route("/api/status")
+    def status():
+        data, code = _proxy("/status")
+        if data is None:
+            return jsonify({"error": "engine offline"}), 503
+        return jsonify(data), code
+
+    @app.route("/api/start", methods=["POST"])
+    def start():
+        data, code = _proxy("/start", method="POST")
+        if data is None:
+            return jsonify({"error": "engine offline"}), 503
+        return jsonify(data), code
+
+    @app.route("/api/stop", methods=["POST"])
+    def stop():
+        data, code = _proxy("/stop", method="POST")
+        if data is None:
+            return jsonify({"error": "engine offline"}), 503
+        return jsonify(data), code
+
+    @app.route("/api/pause", methods=["POST"])
+    def pause():
+        data, code = _proxy("/pause", method="POST")
+        if data is None:
+            return jsonify({"error": "engine offline"}), 503
+        return jsonify(data), code
+
     return app

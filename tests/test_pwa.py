@@ -39,3 +39,54 @@ def test_ping_returns_ok(client):
     resp = c.get("/api/ping")
     assert resp.status_code == 200
     assert json.loads(resp.data) == {"ok": True}
+
+
+def test_status_proxies_engine(client):
+    c, _, _ = client
+    body = {"activity": "typing", "persona": "focused_writer", "engine_state": "running"}
+    with mock.patch("pwa.app.urlopen", return_value=_mock_response(body)):
+        resp = c.get("/api/status")
+    assert resp.status_code == 200
+    data = json.loads(resp.data)
+    assert data["engine_state"] == "running"
+    assert data["activity"] == "typing"
+
+
+def test_status_engine_offline(client):
+    c, _, _ = client
+    with mock.patch("pwa.app.urlopen", side_effect=URLError("refused")):
+        resp = c.get("/api/status")
+    assert resp.status_code == 503
+    assert json.loads(resp.data)["error"] == "engine offline"
+
+
+def test_post_start_proxies(client):
+    c, _, _ = client
+    with mock.patch("pwa.app.urlopen", return_value=_mock_response({"status": "started"})) as m:
+        resp = c.post("/api/start")
+    assert resp.status_code == 200
+    assert m.call_args[0][0].full_url.endswith("/start")
+
+
+def test_post_stop_proxies(client):
+    c, _, _ = client
+    with mock.patch("pwa.app.urlopen", return_value=_mock_response({"status": "stopped"})) as m:
+        resp = c.post("/api/stop")
+    assert resp.status_code == 200
+    assert m.call_args[0][0].full_url.endswith("/stop")
+
+
+def test_post_pause_proxies(client):
+    c, _, _ = client
+    with mock.patch("pwa.app.urlopen", return_value=_mock_response({"status": "paused"})) as m:
+        resp = c.post("/api/pause")
+    assert resp.status_code == 200
+    assert m.call_args[0][0].full_url.endswith("/pause")
+
+
+def test_control_engine_offline(client):
+    c, _, _ = client
+    with mock.patch("pwa.app.urlopen", side_effect=URLError("refused")):
+        resp = c.post("/api/start")
+    assert resp.status_code == 503
+    assert json.loads(resp.data)["error"] == "engine offline"
