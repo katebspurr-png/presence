@@ -67,11 +67,14 @@ def run_engine(
                 activity = TypingActivity(
                     config=config,
                     wpm=persona.wpm,
+                    typo_rate=persona.typo_rate,
+                    thinking_pause_p=persona.thinking_pause_p,
+                    thinking_pause_mean_s=persona.thinking_pause_mean_s,
                     hid_path=hid_keyboard,
                     claude_client=claude_client,
                 )
             elif activity_type == "mouse":
-                activity = MouseActivity(hid_path=hid_mouse)
+                activity = MouseActivity(config=config, hid_path=hid_mouse)
             elif activity_type == "idle":
                 activity = IdleActivity()
             else:

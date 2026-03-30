@@ -84,11 +84,17 @@ class TypingActivity(ActivityBase):
         self,
         config: dict,
         wpm: int = 60,
-        hid_path: str = "/dev/hidg0",
+        typo_rate: float = 0.02,
+        thinking_pause_p: float = 0.10,
+        thinking_pause_mean_s: float = 2.0,
+        hid_path: str | None = "/dev/hidg0",
         claude_client=None,
     ) -> None:
         self.config = config
         self.wpm = wpm
+        self.typo_rate = typo_rate
+        self.thinking_pause_p = thinking_pause_p
+        self.thinking_pause_mean_s = thinking_pause_mean_s
         self.hid_path = hid_path
         self.claude_client = claude_client
 
@@ -142,20 +148,20 @@ class TypingActivity(ActivityBase):
         _used_recently[chosen] = now
         return chosen
 
-    def _write_hid(self, content: str) -> None:
-        # Stub: actual HID keystroke encoding (USB HID keycodes, 8-byte reports) is
-        # out of scope for this phase. A real implementation would translate each
-        # character and write reports to self.hid_path at the persona's WPM rate.
-        try:
-            with open(self.hid_path, "wb") as f:
-                f.write(content.encode("utf-8", errors="replace"))
-        except OSError as e:
-            logger.warning(f"hid_unavailable path={self.hid_path} error={e!r}")
-
     def run(self, duration_s: float, control) -> ActivityResult:
+        from engine.hid.keyboard import write_string
+
         content_type = self._pick_content_type()
         content = self._get_content(content_type)
-        self._write_hid(content)
+        write_string(
+            text=content,
+            wpm=self.wpm,
+            typo_rate=self.typo_rate,
+            thinking_pause_p=self.thinking_pause_p,
+            thinking_pause_mean_s=self.thinking_pause_mean_s,
+            control=control,
+            hid_path=self.hid_path,
+        )
         interruptible_sleep(duration_s, control)
         return ActivityResult(
             activity="typing",
