@@ -1,0 +1,14 @@
+[Unit]
+Description=Family Hub PWA
+After=network.target presence.service
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/presence
+EnvironmentFile=-/home/pi/presence/.env
+ExecStart=/home/pi/presence/venv/bin/python run_pwa.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
