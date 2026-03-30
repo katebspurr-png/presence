@@ -9,6 +9,9 @@ class PersonaParams:
     mouse_lambda: float
     idle_lambda: float
     wpm: int
+    typo_rate: float
+    thinking_pause_p: float
+    thinking_pause_mean_s: float
 
 
 _BUILTIN_PERSONAS: dict[str, PersonaParams] = {
@@ -19,6 +22,9 @@ _BUILTIN_PERSONAS: dict[str, PersonaParams] = {
         mouse_lambda=0.05,
         idle_lambda=0.2,
         wpm=70,
+        typo_rate=0.01,
+        thinking_pause_p=0.05,
+        thinking_pause_mean_s=3.0,
     ),
     "distracted_multitasker": PersonaParams(
         name="distracted_multitasker",
@@ -27,6 +33,9 @@ _BUILTIN_PERSONAS: dict[str, PersonaParams] = {
         mouse_lambda=0.3,
         idle_lambda=0.8,
         wpm=55,
+        typo_rate=0.025,
+        thinking_pause_p=0.20,
+        thinking_pause_mean_s=1.5,
     ),
     "slow_and_steady": PersonaParams(
         name="slow_and_steady",
@@ -35,6 +44,9 @@ _BUILTIN_PERSONAS: dict[str, PersonaParams] = {
         mouse_lambda=0.1,
         idle_lambda=0.3,
         wpm=35,
+        typo_rate=0.005,
+        thinking_pause_p=0.03,
+        thinking_pause_mean_s=2.5,
     ),
     "power_user": PersonaParams(
         name="power_user",
@@ -43,6 +55,9 @@ _BUILTIN_PERSONAS: dict[str, PersonaParams] = {
         mouse_lambda=0.15,
         idle_lambda=0.1,
         wpm=90,
+        typo_rate=0.03,
+        thinking_pause_p=0.05,
+        thinking_pause_mean_s=1.0,
     ),
     # "custom" is not in _BUILTIN_PERSONAS — it is always loaded from config
 }
@@ -63,6 +78,9 @@ def get_persona(name: str, config: dict) -> PersonaParams:
             mouse_lambda=float(p["mouse_lambda"]),
             idle_lambda=float(p["idle_lambda"]),
             wpm=int(p["wpm"]),
+            typo_rate=float(p["typo_rate"]),
+            thinking_pause_p=float(p["thinking_pause_p"]),
+            thinking_pause_mean_s=float(p["thinking_pause_mean_s"]),
         )
     if name not in _BUILTIN_PERSONAS:
         raise ValueError(f"Unknown persona: {name!r}")
