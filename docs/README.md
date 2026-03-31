@@ -31,7 +31,17 @@ presence/
 │   └── command_server.py    # HTTP control endpoint
 ├── config.json              # Runtime configuration
 ├── run.py                   # Entrypoint
-└── presence.service         # systemd unit
+├── presence.service         # systemd unit
+├── pwa/
+│   ├── __init__.py
+│   ├── app.py              # Flask app factory + all routes
+│   ├── templates/
+│   │   └── index.html      # Single-page PWA
+│   └── static/
+│       ├── manifest.json   # PWA manifest
+│       └── icon.svg        # House outline icon
+├── run_pwa.py              # PWA entrypoint (0.0.0.0:5000)
+└── presence-pwa.service    # systemd unit for PWA process
 ```
 
 ## Setup
@@ -79,13 +89,39 @@ Runs on `127.0.0.1:7777` (configurable in `config.json`).
 | POST | `/stop` | Stop engine |
 | POST | `/pause` | Toggle pause |
 
+## Family Hub PWA
+
+Mobile-first control interface served at `http://<device-ip>:5000`. Install to home screen via the browser's "Add to Home Screen" prompt — it will appear as **Family Hub** with a neutral house icon.
+
+**Start manually:**
+```bash
+python3 run_pwa.py
+```
+
+**Deploy with systemd:**
+```bash
+sudo cp presence-pwa.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable presence-pwa
+sudo systemctl start presence-pwa
+```
+
+**Environment variables:**
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PRESENCE_CONFIG` | `config.json` | Path to shared config file |
+| `PRESENCE_COMMAND_URL` | `http://127.0.0.1:7777` | Command server base URL |
+
+> **Security note:** No authentication is required. Access should be restricted to a trusted local network via router/firewall configuration. Do not expose port 5000 to the internet.
+
 ## Running Tests
 
 ```bash
 python3 -m pytest tests/ -v
 ```
 
-115 tests. Integration smoke tests take ~40s.
+134 tests. Integration smoke tests take ~40s.
 
 ## Activity Types
 
@@ -106,4 +142,4 @@ python3 -m pytest tests/ -v
 | `power_user` | 90 | 3% | Rare (5%), short (1s) | Fast, dense, short gaps |
 | `custom` | configurable | configurable | configurable | All params from `config.json` |
 
-74 tests → 115 tests. Run with: `python3 -m pytest tests/ -v`
+74 tests → 134 tests. Run with: `python3 -m pytest tests/ -v`
