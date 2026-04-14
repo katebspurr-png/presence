@@ -56,6 +56,11 @@ def create_app(config_path=None, command_url=None):
         data, code = _proxy("/status")
         if data is None:
             return jsonify({"error": "engine offline"}), 503
+        try:
+            cfg = _read_config()
+            data["configured_persona"] = cfg.get("persona", "")
+        except Exception:
+            pass
         return jsonify(data), code
 
     @app.route("/api/start", methods=["POST"])

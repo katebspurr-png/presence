@@ -88,13 +88,22 @@ def main() -> None:
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
 
-    run_engine(
-        control=control,
-        config_store=config_store,
-        status_store=status_store,
-        activity_logger=activity_logger,
-        claude_client=claude_client,
-    )
+    while True:
+        run_engine(
+            control=control,
+            config_store=config_store,
+            status_store=status_store,
+            activity_logger=activity_logger,
+            claude_client=claude_client,
+        )
+        # Engine loop exited due to stop command (not SIGINT/SIGTERM).
+        # Wait for a start command before re-entering the loop.
+        if not command_server.is_alive():
+            break
+        log.info("engine_stopped_waiting_for_start")
+        control.running.wait()
+        if not command_server.is_alive():
+            break
 
 
 if __name__ == "__main__":

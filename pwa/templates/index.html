@@ -345,7 +345,7 @@ function renderStatus(data) {
   }
 
   renderControls(state);
-  renderPersonaPills(data.persona);
+  renderPersonaPills(data.configured_persona || data.persona);
 
   if (Array.isArray(data.dead_zones)) {
     _lastDeadZones = data.dead_zones;
