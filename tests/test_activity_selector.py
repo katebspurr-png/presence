@@ -116,6 +116,23 @@ def test_time_until_dead_zone_s_returns_none_when_no_zones():
     assert selector.time_until_dead_zone_s() is None
 
 
+def test_testing_mode_uses_peak_weights_regardless_of_hour():
+    config = {**BASE_CONFIG, "testing_mode": True}
+    selector = ActivitySelector(config)
+    # 3am — normally dominated by dead_stop/idle; testing_mode should still produce active activities
+    early_morning = datetime(2026, 3, 30, 3, 0)
+    results = set()
+    with patch("engine.activity_selector.datetime") as mock_dt:
+        mock_dt.now.return_value = early_morning
+        mock_dt.combine = datetime.combine
+        mock_dt.strptime = datetime.strptime
+        for _ in range(100):
+            activity_type, _ = selector.select()
+            results.add(activity_type)
+    assert "typing" in results
+    assert "mouse" in results
+
+
 def test_update_config_changes_persona():
     selector = ActivitySelector(BASE_CONFIG)
     assert selector.current_persona_name == "focused_writer"

@@ -26,13 +26,16 @@ class ActivitySelector:
         if dead_zone_remaining is not None:
             return ("dead_stop", float(dead_zone_remaining))
 
-        hour = now.hour
-        weights = [
-            self.config["time_profiles"]["typing"][hour],
-            self.config["time_profiles"]["mouse"][hour],
-            self.config["time_profiles"]["idle"][hour],
-            self.config["time_profiles"]["dead_stop"][hour],
-        ]
+        if self.config.get("testing_mode", False):
+            weights = [0.7, 0.5, 0.2, 0.05]
+        else:
+            hour = now.hour
+            weights = [
+                self.config["time_profiles"]["typing"][hour],
+                self.config["time_profiles"]["mouse"][hour],
+                self.config["time_profiles"]["idle"][hour],
+                self.config["time_profiles"]["dead_stop"][hour],
+            ]
 
         activity_type = random.choices(_ACTIVITY_TYPES, weights=weights, k=1)[0]
         _, duration_s = self._sample_duration(activity_type)
