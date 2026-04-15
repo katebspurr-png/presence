@@ -33,6 +33,10 @@ fi
 
 chmod +x setup/enable-gadget.sh setup/firstboot.sh
 
+echo "Installing udev rule for HID device permissions..."
+echo 'SUBSYSTEM=="hidraw", KERNEL=="hidg*", MODE="0666"' | sudo tee /etc/udev/rules.d/99-hidg.conf
+sudo udevadm control --reload-rules
+
 echo ""
 echo "Done. Reboot to activate:"
 echo "  sudo reboot"
