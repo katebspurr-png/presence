@@ -31,7 +31,7 @@ echo "[2/5] Writing /etc/bluetooth/main.conf..."
 cat > /etc/bluetooth/main.conf << 'EOF'
 [General]
 # Device name shown during pairing
-Name = Presence
+Name = Bluetooth Mouse
 
 # Device class: 0x002540 = Major 0x05 (Peripheral) + Minor 0x10 (keyboard) + 0x20 (mouse)
 # 0x0005 = Major class Peripheral, 0x40 = keyboard, 0x80 = mouse → 0xC0 minor
@@ -126,9 +126,9 @@ SDP_RECORD_XML = f"""<?xml version="1.0" encoding="UTF-8" ?>
       </sequence>
     </sequence>
   </attribute>
-  <attribute id="0x0100"><text value="Presence HID"/></attribute>
-  <attribute id="0x0101"><text value="Presence Keyboard Mouse"/></attribute>
-  <attribute id="0x0102"><text value="Presence"/></attribute>
+  <attribute id="0x0100"><text value="Bluetooth Mouse"/></attribute>
+  <attribute id="0x0101"><text value="Bluetooth Mouse"/></attribute>
+  <attribute id="0x0102"><text value="Bluetooth Mouse"/></attribute>
   <attribute id="0x0201"><uint16 value="0x0111"/></attribute>
   <attribute id="0x0202"><uint8 value="0xC0"/></attribute>
   <attribute id="0x0203"><uint8 value="0x00"/></attribute>
@@ -225,7 +225,7 @@ echo "=== BT HID setup complete ==="
 echo ""
 echo "Next steps:"
 echo "  1. On your work computer, open Bluetooth settings"
-echo "  2. Pair with 'Presence'"
+echo "  2. Pair with 'Bluetooth Mouse'"
 echo "  3. On the Pi, run: bluetoothctl trust <MAC_ADDRESS>"
 echo "  4. In config.json, set: \"hid_mode\": \"bluetooth\""
 echo "  5. Restart the presence service: sudo systemctl restart presence"
