@@ -187,6 +187,36 @@ header { padding: 28px 24px 8px; }
   flex: 1; padding: 12px; border: 1.5px solid #E2C4BC; border-radius: 10px;
   background: transparent; color: #C4785A; font-size: 14px; font-weight: 600; cursor: pointer;
 }
+
+/* ── Mode toggle ── */
+.mode-toggle {
+  display: flex; gap: 6px; margin-bottom: 16px;
+}
+.mode-btn {
+  flex: 1; padding: 10px 8px; border-radius: 10px;
+  font-size: 13px; font-weight: 600;
+  border: 1.5px solid #E8E2DC; background: transparent; color: #7A6E66;
+  cursor: pointer; transition: all .15s; text-align: center;
+}
+.mode-btn.active { background: #C4785A; color: #fff; border-color: #C4785A; }
+
+/* ── Settings collapsible (reuses dz-card pattern) ── */
+.settings-row { display: flex; gap: 10px; margin-bottom: 14px; }
+.settings-field { flex: 1; }
+.settings-label { font-size: 12px; font-weight: 500; color: #9A9087; margin-bottom: 4px; }
+.settings-input {
+  width: 100%; padding: 10px 12px;
+  border: 1.5px solid #E8E2DC; border-radius: 10px;
+  font-size: 14px; color: #2C2C2A; background: #fff; outline: none;
+}
+.settings-input:focus { border-color: #C4785A; }
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: #2C2C2A; color: #fff; border-radius: 20px;
+  padding: 10px 20px; font-size: 13px; font-weight: 600;
+  opacity: 0; transition: opacity .25s; pointer-events: none; white-space: nowrap;
+}
+.toast.show { opacity: 1; }
 </style>
 </head>
 <body>
@@ -230,6 +260,39 @@ header { padding: 28px 24px 8px; }
   <div class="section-label">Recent Activity</div>
   <div id="feed-list"></div>
 </div>
+
+<!-- Bluetooth + Settings -->
+<details class="card dz-card" id="bt-details">
+  <summary id="bt-summary">Connection &amp; Settings</summary>
+  <div class="dz-inner">
+
+    <div class="section-label" style="margin-bottom:10px">HID Mode</div>
+    <div class="mode-toggle">
+      <button class="mode-btn" id="mode-usb" onclick="setHidMode('usb')">USB Cable</button>
+      <button class="mode-btn" id="mode-bt"  onclick="setHidMode('bluetooth')">Bluetooth</button>
+    </div>
+    <div id="bt-discover-wrap" hidden style="margin-bottom:16px">
+      <button class="dz-btn-primary" style="width:100%" onclick="btDiscover()">Start Pairing Mode</button>
+      <div id="bt-discover-hint" style="font-size:12px;color:#9A9087;margin-top:6px;text-align:center"></div>
+    </div>
+
+    <div class="section-label" style="margin-bottom:10px;margin-top:4px">Screen Resolution</div>
+    <div class="settings-row">
+      <div class="settings-field">
+        <div class="settings-label">Width (px)</div>
+        <input type="number" class="settings-input" id="screen-width" min="320" max="7680" placeholder="1920">
+      </div>
+      <div class="settings-field">
+        <div class="settings-label">Height (px)</div>
+        <input type="number" class="settings-input" id="screen-height" min="240" max="4320" placeholder="1080">
+      </div>
+    </div>
+    <div class="dz-actions">
+      <button class="dz-btn-primary" onclick="saveSettings()">Save</button>
+    </div>
+
+  </div>
+</details>
 
 <!-- Dead zone editor -->
 <details class="card dz-card" id="dz-details">
@@ -568,6 +631,92 @@ async function deleteDeadZone() {
 document.getElementById('dz-timeline').addEventListener('click', e => {
   if (!e.target.hasAttribute('data-idx')) cancelDeadZone();
 });
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+
+let _toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ── Bluetooth ─────────────────────────────────────────────────────────────────
+
+async function fetchBluetooth() {
+  try {
+    const r = await fetch('/api/bluetooth');
+    if (!r.ok) return;
+    const data = await r.json();
+    renderBluetooth(data.hid_mode || 'usb');
+  } catch {}
+}
+
+function renderBluetooth(mode) {
+  document.getElementById('mode-usb').classList.toggle('active', mode === 'usb');
+  document.getElementById('mode-bt').classList.toggle('active', mode === 'bluetooth');
+  document.getElementById('bt-discover-wrap').hidden = (mode !== 'bluetooth');
+}
+
+async function setHidMode(mode) {
+  const r = await fetch('/api/bluetooth', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ hid_mode: mode }),
+  });
+  if (r.ok) {
+    renderBluetooth(mode);
+    showToast(mode === 'bluetooth' ? 'Switched to Bluetooth' : 'Switched to USB');
+  }
+}
+
+async function btDiscover() {
+  const hint = document.getElementById('bt-discover-hint');
+  hint.textContent = 'Making discoverable…';
+  try {
+    const r = await fetch('/api/bluetooth/discover', { method: 'POST' });
+    const data = await r.json();
+    hint.textContent = data.ok
+      ? 'Discoverable — open Bluetooth on your computer and pair with "Presence"'
+      : (data.error || 'Failed');
+  } catch {
+    hint.textContent = 'Error — is the engine running on the Pi?';
+  }
+}
+
+// ── Screen settings ───────────────────────────────────────────────────────────
+
+async function fetchSettings() {
+  try {
+    const r = await fetch('/api/settings');
+    if (!r.ok) return;
+    const data = await r.json();
+    if (data.screen) {
+      document.getElementById('screen-width').value  = data.screen.width  || 1920;
+      document.getElementById('screen-height').value = data.screen.height || 1080;
+    }
+    if (data.hid_mode) renderBluetooth(data.hid_mode);
+  } catch {}
+}
+
+async function saveSettings() {
+  const w = parseInt(document.getElementById('screen-width').value, 10);
+  const h = parseInt(document.getElementById('screen-height').value, 10);
+  if (!w || !h) { showToast('Enter valid dimensions'); return; }
+  const r = await fetch('/api/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ screen: { width: w, height: h } }),
+  });
+  showToast(r.ok ? 'Settings saved' : 'Save failed');
+}
+
+fetchBluetooth();
+fetchSettings();
 </script>
+
+<div class="toast" id="toast"></div>
 </body>
 </html>

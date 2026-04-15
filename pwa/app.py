@@ -1,6 +1,7 @@
 import json
 import os
 import sqlite3
+import subprocess
 from pathlib import Path
 from urllib.error import URLError
 from urllib.request import Request, urlopen
@@ -160,5 +161,77 @@ def create_app(config_path=None, command_url=None):
         except Exception:
             return jsonify({"error": "config error"}), 500
         return jsonify({"dead_zones": zones})
+
+    # ── Bluetooth ────────────────────────────────────────────────────────────
+
+    @app.route("/api/bluetooth", methods=["GET"])
+    def bluetooth_get():
+        try:
+            cfg = _read_config()
+            return jsonify({"hid_mode": cfg.get("hid_mode", "usb")})
+        except Exception:
+            return jsonify({"error": "config error"}), 500
+
+    @app.route("/api/bluetooth", methods=["POST"])
+    def bluetooth_set():
+        body = request.get_json(force=True, silent=True) or {}
+        mode = body.get("hid_mode", "")
+        if mode not in ("usb", "bluetooth"):
+            return jsonify({"error": "hid_mode must be 'usb' or 'bluetooth'"}), 400
+        try:
+            cfg = _read_config()
+            cfg["hid_mode"] = mode
+            _write_config(cfg)
+        except Exception:
+            return jsonify({"error": "config error"}), 500
+        # Signal engine to reload config
+        _proxy("/reload", method="POST")
+        return jsonify({"hid_mode": mode})
+
+    @app.route("/api/bluetooth/discover", methods=["POST"])
+    def bluetooth_discover():
+        """Make the Pi discoverable for BT pairing (runs bluetoothctl on the Pi)."""
+        try:
+            result = subprocess.run(
+                ["bluetoothctl", "discoverable", "on"],
+                timeout=5, capture_output=True, text=True,
+            )
+            return jsonify({"ok": result.returncode == 0, "output": result.stdout.strip()})
+        except FileNotFoundError:
+            return jsonify({"error": "bluetoothctl not found (not running on Pi?)"}), 500
+        except subprocess.TimeoutExpired:
+            return jsonify({"error": "bluetoothctl timed out"}), 500
+
+    # ── Screen settings ──────────────────────────────────────────────────────
+
+    @app.route("/api/settings", methods=["GET"])
+    def settings_get():
+        try:
+            cfg = _read_config()
+            return jsonify({
+                "screen": cfg.get("screen", {"width": 1920, "height": 1080}),
+                "hid_mode": cfg.get("hid_mode", "usb"),
+            })
+        except Exception:
+            return jsonify({"error": "config error"}), 500
+
+    @app.route("/api/settings", methods=["POST"])
+    def settings_set():
+        body = request.get_json(force=True, silent=True) or {}
+        try:
+            cfg = _read_config()
+            if "screen" in body:
+                w = int(body["screen"].get("width", 1920))
+                h = int(body["screen"].get("height", 1080))
+                if not (320 <= w <= 7680 and 240 <= h <= 4320):
+                    return jsonify({"error": "screen dimensions out of range"}), 400
+                cfg["screen"] = {"width": w, "height": h}
+            _write_config(cfg)
+        except (ValueError, TypeError):
+            return jsonify({"error": "invalid dimensions"}), 400
+        except Exception:
+            return jsonify({"error": "config error"}), 500
+        _proxy("/reload", method="POST")
+        return jsonify({"screen": cfg["screen"]})
 
     return app

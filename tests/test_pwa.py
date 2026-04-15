@@ -185,3 +185,94 @@ def test_delete_dead_zone_out_of_range(client):
     resp = c.delete("/api/dead_zones/99")
     assert resp.status_code == 404
     assert json.loads(resp.data)["error"] == "index out of range"
+
+
+# ---------------------------------------------------------------------------
+# Bluetooth
+# ---------------------------------------------------------------------------
+
+def test_bluetooth_get_default(client):
+    c, _, _ = client
+    resp = c.get("/api/bluetooth")
+    assert resp.status_code == 200
+    assert json.loads(resp.data)["hid_mode"] == "usb"
+
+
+def test_bluetooth_get_explicit(client):
+    c, config_path, _ = client
+    cfg = json.loads(config_path.read_text())
+    cfg["hid_mode"] = "bluetooth"
+    config_path.write_text(json.dumps(cfg))
+    resp = c.get("/api/bluetooth")
+    assert json.loads(resp.data)["hid_mode"] == "bluetooth"
+
+
+def test_bluetooth_set_valid(client):
+    c, config_path, _ = client
+    with mock.patch("urllib.request.urlopen"):
+        resp = c.post("/api/bluetooth",
+                      data=json.dumps({"hid_mode": "bluetooth"}),
+                      content_type="application/json")
+    assert resp.status_code == 200
+    assert json.loads(resp.data)["hid_mode"] == "bluetooth"
+    assert json.loads(config_path.read_text())["hid_mode"] == "bluetooth"
+
+
+def test_bluetooth_set_invalid_mode(client):
+    c, _, _ = client
+    resp = c.post("/api/bluetooth",
+                  data=json.dumps({"hid_mode": "wifi"}),
+                  content_type="application/json")
+    assert resp.status_code == 400
+
+
+def test_bluetooth_discover_no_bluetoothctl(client):
+    c, _, _ = client
+    with mock.patch("subprocess.run", side_effect=FileNotFoundError):
+        resp = c.post("/api/bluetooth/discover")
+    assert resp.status_code == 500
+    assert "bluetoothctl not found" in json.loads(resp.data)["error"]
+
+
+def test_bluetooth_discover_success(client):
+    c, _, _ = client
+    mock_result = mock.MagicMock()
+    mock_result.returncode = 0
+    mock_result.stdout = "Changing discoverable on succeeded"
+    with mock.patch("subprocess.run", return_value=mock_result):
+        resp = c.post("/api/bluetooth/discover")
+    assert resp.status_code == 200
+    assert json.loads(resp.data)["ok"] is True
+
+
+# ---------------------------------------------------------------------------
+# Settings
+# ---------------------------------------------------------------------------
+
+def test_settings_get_default(client):
+    c, _, _ = client
+    resp = c.get("/api/settings")
+    assert resp.status_code == 200
+    data = json.loads(resp.data)
+    assert data["screen"]["width"] == 1920
+    assert data["screen"]["height"] == 1080
+
+
+def test_settings_set_screen(client):
+    c, config_path, _ = client
+    with mock.patch("urllib.request.urlopen"):
+        resp = c.post("/api/settings",
+                      data=json.dumps({"screen": {"width": 2560, "height": 1440}}),
+                      content_type="application/json")
+    assert resp.status_code == 200
+    saved = json.loads(config_path.read_text())
+    assert saved["screen"]["width"] == 2560
+    assert saved["screen"]["height"] == 1440
+
+
+def test_settings_set_invalid_dimensions(client):
+    c, _, _ = client
+    resp = c.post("/api/settings",
+                  data=json.dumps({"screen": {"width": 50, "height": 1080}}),
+                  content_type="application/json")
+    assert resp.status_code == 400
