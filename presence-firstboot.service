@@ -1,0 +1,12 @@
+[Unit]
+Description=Presence First Boot WiFi Check
+After=NetworkManager.service
+Before=presence.service presence-pwa.service
+
+[Service]
+Type=forking
+ExecStart=/home/pi/presence/setup/firstboot.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,7 +1,8 @@
 [Unit]
 Description=Presence Behavioral Engine (Infinite Saturdays)
-After=network.target
+After=network.target presence-firstboot.service presence-gadget.service
 Wants=network.target
+Requires=presence-gadget.service
 
 [Service]
 Type=simple
