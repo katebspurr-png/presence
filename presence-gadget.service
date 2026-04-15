@@ -1,0 +1,11 @@
+[Unit]
+Description=Presence USB HID Gadget Setup
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/home/pi/presence/setup/enable-gadget.sh
+
+[Install]
+WantedBy=multi-user.target

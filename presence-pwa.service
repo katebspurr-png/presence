@@ -1,6 +1,6 @@
 [Unit]
 Description=Family Hub PWA
-After=network.target presence.service
+After=network.target presence.service presence-firstboot.service
 
 [Service]
 User=pi
