@@ -89,6 +89,7 @@ class TypingActivity(ActivityBase):
         thinking_pause_mean_s: float = 2.0,
         hid_path: str | None = "/dev/hidg0",
         claude_client=None,
+        write_fn=None,
     ) -> None:
         self.config = config
         self.wpm = wpm
@@ -97,6 +98,7 @@ class TypingActivity(ActivityBase):
         self.thinking_pause_mean_s = thinking_pause_mean_s
         self.hid_path = hid_path
         self.claude_client = claude_client
+        self.write_fn = write_fn
 
     def _pick_content_type(self) -> str:
         types = self.config.get("claude", {}).get(
@@ -149,19 +151,23 @@ class TypingActivity(ActivityBase):
         return chosen
 
     def run(self, duration_s: float, control) -> ActivityResult:
-        from engine.hid.keyboard import write_string
-
         content_type = self._pick_content_type()
         content = self._get_content(content_type)
-        write_string(
-            text=content,
-            wpm=self.wpm,
-            typo_rate=self.typo_rate,
-            thinking_pause_p=self.thinking_pause_p,
-            thinking_pause_mean_s=self.thinking_pause_mean_s,
-            control=control,
-            hid_path=self.hid_path,
-        )
+
+        if self.write_fn is not None:
+            self.write_fn(content, self.wpm, self.typo_rate,
+                          self.thinking_pause_p, self.thinking_pause_mean_s, control)
+        else:
+            from engine.hid.keyboard import write_string
+            write_string(
+                text=content,
+                wpm=self.wpm,
+                typo_rate=self.typo_rate,
+                thinking_pause_p=self.thinking_pause_p,
+                thinking_pause_mean_s=self.thinking_pause_mean_s,
+                control=control,
+                hid_path=self.hid_path,
+            )
         interruptible_sleep(duration_s, control)
         return ActivityResult(
             activity="typing",

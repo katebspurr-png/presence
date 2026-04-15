@@ -60,8 +60,9 @@ def run_engine(
 
         try:
             persona = get_persona(persona_name, config)
-            hid_keyboard = config["hid"]["keyboard"]
-            hid_mouse = config["hid"]["mouse"]
+            from engine.hid.factory import get_keyboard_writer, get_mouse_runner
+            kb_writer = get_keyboard_writer(config)
+            mouse_runner = get_mouse_runner(config)
 
             if activity_type == "typing":
                 activity = TypingActivity(
@@ -70,11 +71,11 @@ def run_engine(
                     typo_rate=persona.typo_rate,
                     thinking_pause_p=persona.thinking_pause_p,
                     thinking_pause_mean_s=persona.thinking_pause_mean_s,
-                    hid_path=hid_keyboard,
+                    write_fn=kb_writer,
                     claude_client=claude_client,
                 )
             elif activity_type == "mouse":
-                activity = MouseActivity(config=config, hid_path=hid_mouse)
+                activity = MouseActivity(config=config, run_fn=mouse_runner)
             elif activity_type == "idle":
                 activity = IdleActivity()
             else:

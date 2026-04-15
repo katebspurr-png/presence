@@ -1,6 +1,7 @@
 {
   "persona": "power_user",
   "testing_mode": false,
+  "hid_mode": "usb",
   "dead_zones": [
     {
       "start": "09:00",
