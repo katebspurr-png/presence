@@ -1,36 +1,38 @@
 """Bluetooth HID keyboard backend.
 
-Sends keystrokes over Bluetooth HID using the bluez D-Bus interface.
-The Pi must be configured as a BT HID device (see setup/enable-bluetooth-hid.sh)
-and paired with the host computer before this module is used.
+Sends keystrokes over Bluetooth HID via the L2CAP interrupt channel (PSM 0x13).
+The Pi must be configured as a BT HID peripheral (setup/enable-bluetooth-hid.sh)
+and paired with the host before this module is used.
 
 Drop-in replacement for the USB write_string function — same signature,
 same behaviour from the caller's perspective.
 
-TODO (requires Pi hardware):
-  - Obtain the BT HID interrupt socket via bluez ProfileManager1 D-Bus API
-  - Send 8-byte keyboard reports over the socket (same format as USB)
-  - Handle reconnection when the host drops the BT connection
-  - Test pairing flow end-to-end on Pi Zero 2W + macOS/Windows host
+HIDP report format used here (interrupt channel, PSM 0x13):
+  [0xA1, 0x01, modifier, 0x00, keycode, 0x00, 0x00, 0x00, 0x00, 0x00]
+   ^     ^     ^modifier ^rsv  ^key1    ^key2–key6 (zeroed)
+   |     Report ID (keyboard = 1)
+   HIDP DATA | INPUT header
 """
 
 import logging
 
-from engine.hid.keyboard import SCAN_CODES, ADJACENT_KEYS, _write_key, _jittered_delay, _interruptible_pause
+from engine.hid.keyboard import SCAN_CODES, ADJACENT_KEYS, _jittered_delay, _interruptible_pause
 
 logger = logging.getLogger(__name__)
 
+# HIDP transaction header for INPUT reports sent by the device.
+_HIDP_DATA_INPUT: int = 0xA1
+_REPORT_ID_KEYBOARD: int = 0x01
+
+# Key-up: all-zero payload with HIDP header and report ID.
+_KEY_UP_REPORT = bytes([_HIDP_DATA_INPUT, _REPORT_ID_KEYBOARD, 0, 0, 0, 0, 0, 0, 0, 0])
+
 
 def _get_bt_socket():
-    """Return an open BT HID interrupt socket, or None if unavailable.
-
-    TODO: implement via bluez D-Bus ProfileManager1.
-    Expected socket path: /var/run/bluetooth/hid-interrupt
-    """
-    # Placeholder — returns None so callers fall back to dry-run mode
-    # until the BT socket implementation is complete.
-    logger.warning("bluetooth_hid_not_implemented falling_back_to_dry_run=True")
-    return None
+    """Return the active BT HID interrupt socket, or None if not connected."""
+    from engine.hid import bluetooth_connection
+    bluetooth_connection.start()
+    return bluetooth_connection.get_interrupt_socket()
 
 
 def write_string(
@@ -82,18 +84,20 @@ def write_string(
 
 
 def _send_key(bt_socket, char: str) -> None:
-    """Send one key-down + key-up report pair over the BT socket.
+    """Send one key-down + key-up HIDP report pair over the interrupt socket.
 
-    No-op if bt_socket is None (dry run until BT is implemented).
-    Report format is identical to USB: 8 bytes per event.
+    No-op if bt_socket is None (dry-run mode when BT is not connected).
+
+    HIDP keyboard report (10 bytes):
+      [0xA1, 0x01, modifier, 0x00, keycode, 0x00, 0x00, 0x00, 0x00, 0x00]
     """
     if bt_socket is None or char not in SCAN_CODES:
         return
     modifier, keycode = SCAN_CODES[char]
-    key_down = bytes([modifier, 0x00, keycode, 0x00, 0x00, 0x00, 0x00, 0x00])
-    key_up = bytes(8)
+    key_down = bytes([_HIDP_DATA_INPUT, _REPORT_ID_KEYBOARD,
+                      modifier, 0x00, keycode, 0x00, 0x00, 0x00, 0x00, 0x00])
     try:
         bt_socket.send(key_down)
-        bt_socket.send(key_up)
+        bt_socket.send(_KEY_UP_REPORT)
     except OSError as e:
         logger.warning(f"bt_key_send_error={e!r}")

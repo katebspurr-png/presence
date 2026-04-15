@@ -1,14 +1,17 @@
 """Bluetooth HID mouse backend.
 
-Sends mouse movement reports over Bluetooth HID using the bluez D-Bus interface.
+Sends mouse movement reports over the L2CAP interrupt channel (PSM 0x13).
+The Pi must be configured as a BT HID peripheral (setup/enable-bluetooth-hid.sh)
+and paired with the host before this module is used.
 
 Drop-in replacement for the USB run_movement_session function — same signature,
 same behaviour from the caller's perspective.
 
-TODO (requires Pi hardware):
-  - Obtain the BT HID interrupt socket via bluez ProfileManager1 D-Bus API
-  - Send 4-byte mouse reports over the socket (same format as USB)
-  - Handle reconnection when the host drops the BT connection
+HIDP report format used here (interrupt channel, PSM 0x13):
+  [0xA1, 0x02, buttons, dx_signed, dy_signed, wheel_signed]
+   ^     ^     ^0x00   (no buttons pressed for movement)
+   |     Report ID (mouse = 2)
+   HIDP DATA | INPUT header
 """
 
 import logging
@@ -29,14 +32,16 @@ logger = logging.getLogger(__name__)
 _REPORT_HZ = 60
 _REPORT_INTERVAL_S = 1.0 / _REPORT_HZ
 
+# HIDP transaction header for INPUT reports sent by the device.
+_HIDP_DATA_INPUT: int = 0xA1
+_REPORT_ID_MOUSE: int = 0x02
+
 
 def _get_bt_socket():
-    """Return an open BT HID interrupt socket, or None if unavailable.
-
-    TODO: implement via bluez D-Bus ProfileManager1.
-    """
-    logger.warning("bluetooth_hid_not_implemented falling_back_to_dry_run=True")
-    return None
+    """Return the active BT HID interrupt socket, or None if not connected."""
+    from engine.hid import bluetooth_connection
+    bluetooth_connection.start()
+    return bluetooth_connection.get_interrupt_socket()
 
 
 def run_movement_session(
@@ -103,10 +108,20 @@ def run_movement_session(
 
 
 def _send_report(bt_socket, dx: int, dy: int, wheel: int) -> None:
-    """Send one 4-byte mouse report over BT. No-op if socket is None."""
+    """Send one HIDP mouse report over the interrupt socket. No-op if socket is None.
+
+    HIDP mouse report (6 bytes):
+      [0xA1, 0x02, buttons, dx_signed, dy_signed, wheel_signed]
+    """
     if bt_socket is None:
         return
-    report = bytes([0x00, _to_signed_byte(dx), _to_signed_byte(dy), _to_signed_byte(wheel)])
+    report = bytes([
+        _HIDP_DATA_INPUT, _REPORT_ID_MOUSE,
+        0x00,  # buttons (none pressed for movement)
+        _to_signed_byte(dx),
+        _to_signed_byte(dy),
+        _to_signed_byte(wheel),
+    ])
     try:
         bt_socket.send(report)
     except OSError as e:
