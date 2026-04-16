@@ -152,10 +152,26 @@ def _connection_loop() -> None:
         time.sleep(5.0)
 
 
+def _get_local_bt_address() -> str:
+    """Return the local Bluetooth adapter address, or empty string if unavailable."""
+    try:
+        import subprocess
+        out = subprocess.check_output(
+            ["bluetoothctl", "show"], text=True, timeout=5
+        )
+        for line in out.splitlines():
+            if line.strip().startswith("Controller"):
+                return line.split()[1]
+    except Exception:
+        pass
+    return ""
+
+
 def _make_l2cap_server(psm: int) -> "socket.socket":
     s = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_SEQPACKET, socket.BTPROTO_L2CAP)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind(("", psm))
+    addr = _get_local_bt_address()
+    s.bind((addr, psm))
     s.listen(1)
     return s
 
