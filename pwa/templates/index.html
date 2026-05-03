@@ -188,6 +188,24 @@ header { padding: 28px 24px 8px; }
   background: transparent; color: #C4785A; font-size: 14px; font-weight: 600; cursor: pointer;
 }
 
+/* ── Activity mode row ── */
+.activity-mode-wrap {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid #F0EDE9;
+}
+.activity-mode-label {
+  font-size: 11px; font-weight: 600; letter-spacing: .1em;
+  text-transform: uppercase; color: #9A9087; margin-bottom: 8px;
+}
+.activity-mode-pills { display: flex; gap: 6px; }
+.activity-pill {
+  flex: 1; padding: 9px 4px; border-radius: 10px; text-align: center;
+  font-size: 13px; font-weight: 600;
+  border: 1.5px solid #E8E2DC; background: transparent; color: #7A6E66;
+  cursor: pointer; transition: all .15s;
+}
+.activity-pill.active { background: #C4785A; color: #fff; border-color: #C4785A; }
+
 /* ── Override card ── */
 .override-row {
   display: flex; align-items: center;
@@ -276,6 +294,15 @@ header { padding: 28px 24px 8px; }
 <div class="card">
   <button class="btn-primary" id="btn-primary">—</button>
   <button class="btn-secondary" id="btn-secondary">—</button>
+  <div class="activity-mode-wrap">
+    <div class="activity-mode-label">Force Activity</div>
+    <div class="activity-mode-pills">
+      <button class="activity-pill active" data-activity="auto"   onclick="setForcedActivity('auto')">Auto</button>
+      <button class="activity-pill"        data-activity="typing" onclick="setForcedActivity('typing')">Typing</button>
+      <button class="activity-pill"        data-activity="mouse"  onclick="setForcedActivity('mouse')">Mouse</button>
+      <button class="activity-pill"        data-activity="idle"   onclick="setForcedActivity('idle')">Idle</button>
+    </div>
+  </div>
 </div>
 
 <!-- Override card -->
@@ -467,6 +494,7 @@ function renderStatus(data) {
 
   renderControls(state);
   renderPersonaPills(data.configured_persona || data.persona);
+  renderForcedActivity(data.forced_activity || null);
 
   if (Array.isArray(data.dead_zones)) {
     _lastDeadZones = data.dead_zones;
@@ -690,6 +718,33 @@ async function deleteDeadZone() {
 document.getElementById('dz-timeline').addEventListener('click', e => {
   if (!e.target.hasAttribute('data-idx')) cancelDeadZone();
 });
+
+// ── Forced activity ───────────────────────────────────────────────────────────
+
+function renderForcedActivity(forced) {
+  document.querySelectorAll('.activity-pill').forEach(p => {
+    const match = forced ? p.dataset.activity === forced : p.dataset.activity === 'auto';
+    p.classList.toggle('active', match);
+  });
+}
+
+async function setForcedActivity(activity) {
+  if (activity === 'auto') {
+    await fetch('/api/activity', { method: 'DELETE' });
+    renderForcedActivity(null);
+    showToast('Auto mode');
+  } else {
+    const r = await fetch('/api/activity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activity }),
+    });
+    if (r.ok) {
+      renderForcedActivity(activity);
+      showToast(`Forcing ${activity}`);
+    }
+  }
+}
 
 // ── Override ──────────────────────────────────────────────────────────────────
 

@@ -41,6 +41,12 @@ class ActivitySelector:
 
         override = self._override_active()
 
+        # Forced activity takes highest priority
+        forced = self.config.get("forced_activity")
+        if forced in _ACTIVITY_TYPES:
+            _, duration_s = self._sample_duration(forced)
+            return (forced, duration_s)
+
         # Dead zones are skipped when override is active
         if not override:
             dead_zone_remaining = self._dead_zone_remaining_s(now)

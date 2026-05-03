@@ -60,6 +60,7 @@ def create_app(config_path=None, command_url=None):
         try:
             cfg = _read_config()
             data["configured_persona"] = cfg.get("persona", "")
+            data["forced_activity"] = cfg.get("forced_activity")
         except Exception:
             pass
         return jsonify(data), code
@@ -204,6 +205,32 @@ def create_app(config_path=None, command_url=None):
         except Exception:
             return jsonify({"error": "config error"}), 500
         return jsonify({"active": False, "expires_at": None})
+
+    # ── Forced activity ──────────────────────────────────────────────────────
+
+    @app.route("/api/activity", methods=["POST"])
+    def activity_set():
+        body = request.get_json(force=True, silent=True) or {}
+        activity = body.get("activity", "")
+        if activity not in ("typing", "mouse", "idle"):
+            return jsonify({"error": "activity must be typing, mouse, or idle"}), 400
+        try:
+            cfg = _read_config()
+            cfg["forced_activity"] = activity
+            _write_config(cfg)
+        except Exception:
+            return jsonify({"error": "config error"}), 500
+        return jsonify({"forced_activity": activity})
+
+    @app.route("/api/activity", methods=["DELETE"])
+    def activity_clear():
+        try:
+            cfg = _read_config()
+            cfg.pop("forced_activity", None)
+            _write_config(cfg)
+        except Exception:
+            return jsonify({"error": "config error"}), 500
+        return jsonify({"forced_activity": None})
 
     # ── Bluetooth ────────────────────────────────────────────────────────────
 
