@@ -723,6 +723,16 @@ document.getElementById('dz-timeline').addEventListener('click', e => {
   if (!e.target.hasAttribute('data-idx')) cancelDeadZone();
 });
 
+// ── Keyboard shortcut: Ctrl+Shift+P → pause/resume ───────────────────────────
+document.addEventListener('keydown', async (e) => {
+  if (e.ctrlKey && e.shiftKey && e.key === 'P') {
+    e.preventDefault();
+    await fetch('/api/pause', { method: 'POST' });
+    fetchStatus();
+    showToast('Ctrl+Shift+P — toggled pause');
+  }
+});
+
 // ── Forced activity ───────────────────────────────────────────────────────────
 
 function renderForcedActivity(forced) {
