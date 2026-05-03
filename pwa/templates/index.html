@@ -473,9 +473,6 @@ function renderStatus(data) {
     renderDeadZoneSection(_lastDeadZones);
   }
 
-  if (data.override_active !== undefined) {
-    renderOverride({ active: data.override_active, expires_at: data.override_expires_at });
-  }
 }
 
 // ── Controls ──────────────────────────────────────────────────────────────────
