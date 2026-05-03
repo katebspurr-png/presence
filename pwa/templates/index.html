@@ -429,6 +429,7 @@ const TL_W = 600;
 
 let _lastDeadZones = [];
 let _selectedZoneIdx = null;
+let _lastForcedActivity = undefined;
 
 // ── Polling ───────────────────────────────────────────────────────────────────
 
@@ -494,7 +495,10 @@ function renderStatus(data) {
 
   renderControls(state);
   renderPersonaPills(data.configured_persona || data.persona);
-  renderForcedActivity(data.forced_activity || null);
+  if (data.forced_activity !== _lastForcedActivity) {
+    _lastForcedActivity = data.forced_activity || null;
+    renderForcedActivity(_lastForcedActivity);
+  }
 
   if (Array.isArray(data.dead_zones)) {
     _lastDeadZones = data.dead_zones;
