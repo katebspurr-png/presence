@@ -169,3 +169,53 @@ def test_time_until_dead_zone_scans_48h_ahead():
     # Tuesday 09:00 is about 32460 seconds after Monday 23:59 (9h 1m)
     assert result is not None
     assert 32000 <= result <= 33000
+
+
+# ---------------------------------------------------------------------------
+# Override tests
+# ---------------------------------------------------------------------------
+
+def test_override_inactive_by_default():
+    selector = ActivitySelector(BASE_CONFIG)
+    assert selector._override_active() is False
+
+
+def test_override_active_no_expiry():
+    cfg = {**BASE_CONFIG, "override": {"active": True, "expires_at": None}}
+    selector = ActivitySelector(cfg)
+    assert selector._override_active() is True
+
+
+def test_override_active_future_expiry():
+    from datetime import datetime, timedelta
+    future = (datetime.now() + timedelta(hours=2)).isoformat(timespec="seconds")
+    cfg = {**BASE_CONFIG, "override": {"active": True, "expires_at": future}}
+    selector = ActivitySelector(cfg)
+    assert selector._override_active() is True
+
+
+def test_override_expired():
+    from datetime import datetime, timedelta
+    past = (datetime.now() - timedelta(hours=1)).isoformat(timespec="seconds")
+    cfg = {**BASE_CONFIG, "override": {"active": True, "expires_at": past}}
+    selector = ActivitySelector(cfg)
+    assert selector._override_active() is False
+
+
+def test_override_skips_dead_zone():
+    """When override is active, dead zones are bypassed."""
+    from datetime import datetime
+    from unittest.mock import patch
+    from datetime import datetime, timedelta
+    future = (datetime.now() + timedelta(hours=2)).isoformat(timespec="seconds")
+    cfg = {**BASE_CONFIG, "override": {"active": True, "expires_at": future}}
+    selector = ActivitySelector(cfg)
+    # Monday 09:15 is inside the dead zone
+    monday_dead = datetime(2026, 3, 30, 9, 15)
+    with patch("engine.activity_selector.datetime") as mock_dt:
+        mock_dt.now.return_value = monday_dead
+        mock_dt.combine = datetime.combine
+        mock_dt.strptime = datetime.strptime
+        mock_dt.fromisoformat = datetime.fromisoformat
+        activity, _ = selector.select()
+    assert activity != "dead_stop"

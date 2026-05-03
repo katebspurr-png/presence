@@ -162,6 +162,49 @@ def create_app(config_path=None, command_url=None):
             return jsonify({"error": "config error"}), 500
         return jsonify({"dead_zones": zones})
 
+    # ── Override ─────────────────────────────────────────────────────────────
+
+    @app.route("/api/override", methods=["GET"])
+    def override_get():
+        try:
+            cfg = _read_config()
+            return jsonify(cfg.get("override", {"active": False, "expires_at": None}))
+        except Exception:
+            return jsonify({"error": "config error"}), 500
+
+    @app.route("/api/override", methods=["POST"])
+    def override_set():
+        """Enable override. Body: {"duration_minutes": N} or {} for indefinite."""
+        body = request.get_json(force=True, silent=True) or {}
+        duration = body.get("duration_minutes")
+        expires_at = None
+        if duration is not None:
+            try:
+                duration = int(duration)
+                if duration <= 0:
+                    return jsonify({"error": "duration_minutes must be positive"}), 400
+                from datetime import datetime, timedelta
+                expires_at = (datetime.now() + timedelta(minutes=duration)).isoformat(timespec="seconds")
+            except (ValueError, TypeError):
+                return jsonify({"error": "invalid duration_minutes"}), 400
+        try:
+            cfg = _read_config()
+            cfg["override"] = {"active": True, "expires_at": expires_at}
+            _write_config(cfg)
+        except Exception:
+            return jsonify({"error": "config error"}), 500
+        return jsonify(cfg["override"])
+
+    @app.route("/api/override", methods=["DELETE"])
+    def override_delete():
+        try:
+            cfg = _read_config()
+            cfg["override"] = {"active": False, "expires_at": None}
+            _write_config(cfg)
+        except Exception:
+            return jsonify({"error": "config error"}), 500
+        return jsonify({"active": False, "expires_at": None})
+
     # ── Bluetooth ────────────────────────────────────────────────────────────
 
     @app.route("/api/bluetooth", methods=["GET"])

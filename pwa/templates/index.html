@@ -188,6 +188,40 @@ header { padding: 28px 24px 8px; }
   background: transparent; color: #C4785A; font-size: 14px; font-weight: 600; cursor: pointer;
 }
 
+/* ── Override card ── */
+.override-row {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 14px;
+}
+.override-label { font-size: 15px; font-weight: 600; }
+.override-sub   { font-size: 12px; color: #9A9087; margin-top: 2px; }
+.toggle-wrap { position: relative; width: 48px; height: 28px; flex-shrink: 0; }
+.toggle-wrap input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0; background: #E0DAD4; border-radius: 28px;
+  cursor: pointer; transition: background .2s;
+}
+.toggle-slider::before {
+  content: ''; position: absolute;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #fff; left: 3px; top: 3px;
+  transition: transform .2s; box-shadow: 0 1px 4px rgba(0,0,0,.2);
+}
+.toggle-wrap input:checked + .toggle-slider { background: #C4785A; }
+.toggle-wrap input:checked + .toggle-slider::before { transform: translateX(20px); }
+.duration-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.dur-pill {
+  padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 500;
+  border: 1.5px solid #E8E2DC; background: transparent; color: #7A6E66;
+  cursor: pointer; transition: all .15s;
+}
+.dur-pill.active { background: #C4785A; color: #fff; border-color: #C4785A; }
+.override-countdown {
+  margin-top: 12px; padding: 10px 14px; border-radius: 10px;
+  background: #FDF3EF; color: #C4785A; font-size: 13px; font-weight: 600;
+  text-align: center;
+}
+
 /* ── Mode toggle ── */
 .mode-toggle {
   display: flex; gap: 6px; margin-bottom: 16px;
@@ -242,6 +276,30 @@ header { padding: 28px 24px 8px; }
 <div class="card">
   <button class="btn-primary" id="btn-primary">—</button>
   <button class="btn-secondary" id="btn-secondary">—</button>
+</div>
+
+<!-- Override card -->
+<div class="card" id="override-card">
+  <div class="override-row">
+    <div>
+      <div class="override-label">Override</div>
+      <div class="override-sub" id="override-sub">Force active outside work hours</div>
+    </div>
+    <label class="toggle-wrap">
+      <input type="checkbox" id="override-toggle" onchange="onOverrideToggle()">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <div id="override-duration-wrap">
+    <div class="section-label" style="margin-bottom:8px">Duration</div>
+    <div class="duration-pills">
+      <button class="dur-pill active" data-minutes="60">1h</button>
+      <button class="dur-pill" data-minutes="120">2h</button>
+      <button class="dur-pill" data-minutes="240">4h</button>
+      <button class="dur-pill" data-minutes="0">Until off</button>
+    </div>
+  </div>
+  <div class="override-countdown" id="override-countdown" hidden></div>
 </div>
 
 <!-- Persona card -->
@@ -413,6 +471,10 @@ function renderStatus(data) {
   if (Array.isArray(data.dead_zones)) {
     _lastDeadZones = data.dead_zones;
     renderDeadZoneSection(_lastDeadZones);
+  }
+
+  if (data.override_active !== undefined) {
+    renderOverride({ active: data.override_active, expires_at: data.override_expires_at });
   }
 }
 
@@ -631,6 +693,99 @@ async function deleteDeadZone() {
 document.getElementById('dz-timeline').addEventListener('click', e => {
   if (!e.target.hasAttribute('data-idx')) cancelDeadZone();
 });
+
+// ── Override ──────────────────────────────────────────────────────────────────
+
+let _selectedDurationMin = 60;
+let _overrideCountdownTimer = null;
+
+document.querySelectorAll('.dur-pill').forEach(p => {
+  p.addEventListener('click', () => {
+    document.querySelectorAll('.dur-pill').forEach(x => x.classList.remove('active'));
+    p.classList.add('active');
+    _selectedDurationMin = parseInt(p.dataset.minutes, 10);
+  });
+});
+
+async function fetchOverride() {
+  try {
+    const r = await fetch('/api/override');
+    if (!r.ok) return;
+    renderOverride(await r.json());
+  } catch {}
+}
+
+function renderOverride(data) {
+  const toggle = document.getElementById('override-toggle');
+  const countdown = document.getElementById('override-countdown');
+  const durationWrap = document.getElementById('override-duration-wrap');
+  const sub = document.getElementById('override-sub');
+
+  const active = data.active && (
+    !data.expires_at || new Date(data.expires_at) > new Date()
+  );
+
+  toggle.checked = active;
+  durationWrap.hidden = active;
+  clearInterval(_overrideCountdownTimer);
+
+  if (active && data.expires_at) {
+    countdown.hidden = false;
+    _updateCountdown(data.expires_at);
+    _overrideCountdownTimer = setInterval(() => _updateCountdown(data.expires_at), 10000);
+    sub.textContent = 'Active — bypassing time restrictions';
+  } else if (active) {
+    countdown.hidden = false;
+    countdown.textContent = 'Active until manually turned off';
+    sub.textContent = 'Active — bypassing time restrictions';
+  } else {
+    countdown.hidden = true;
+    sub.textContent = 'Force active outside work hours';
+  }
+}
+
+function _updateCountdown(expiresAt) {
+  const countdown = document.getElementById('override-countdown');
+  const ms = new Date(expiresAt) - new Date();
+  if (ms <= 0) {
+    countdown.textContent = 'Expired';
+    fetchOverride();
+    return;
+  }
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  countdown.textContent = h > 0 ? `Active for ${h}h ${m}m more` : `Active for ${m}m more`;
+}
+
+async function onOverrideToggle() {
+  const toggle = document.getElementById('override-toggle');
+  if (toggle.checked) {
+    const body = _selectedDurationMin > 0
+      ? { duration_minutes: _selectedDurationMin }
+      : {};
+    const r = await fetch('/api/override', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (r.ok) {
+      renderOverride(await r.json());
+      showToast('Override on');
+    } else {
+      toggle.checked = false;
+    }
+  } else {
+    const r = await fetch('/api/override', { method: 'DELETE' });
+    if (r.ok) {
+      renderOverride(await r.json());
+      showToast('Override off');
+    } else {
+      toggle.checked = true;
+    }
+  }
+}
+
+fetchOverride();
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
 

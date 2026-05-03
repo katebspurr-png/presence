@@ -6,6 +6,9 @@ from engine.distributions import exponential_duration, gaussian_duration
 
 _ACTIVITY_TYPES = ["typing", "mouse", "idle", "dead_stop"]
 
+# Weights used when override or testing_mode is active — high-activity profile
+_OVERRIDE_WEIGHTS = [0.7, 0.5, 0.2, 0.05]
+
 
 class ActivitySelector:
     def __init__(self, config: dict) -> None:
@@ -18,16 +21,34 @@ class ActivitySelector:
     def current_persona_name(self) -> str:
         return self.config["persona"]
 
+    def _override_active(self) -> bool:
+        """Return True if a valid, unexpired override is set in config."""
+        override = self.config.get("override", {})
+        if not override.get("active", False):
+            return False
+        expires_at = override.get("expires_at")
+        if expires_at is None:
+            return True  # no expiry — active indefinitely until manually disabled
+        try:
+            expiry = datetime.fromisoformat(expires_at)
+            return datetime.now() < expiry
+        except (ValueError, TypeError):
+            return False
+
     def select(self) -> Tuple[str, float]:
         """Return (activity_type, duration_s) for the next activity."""
         now = datetime.now()
 
-        dead_zone_remaining = self._dead_zone_remaining_s(now)
-        if dead_zone_remaining is not None:
-            return ("dead_stop", float(dead_zone_remaining))
+        override = self._override_active()
 
-        if self.config.get("testing_mode", False):
-            weights = [0.7, 0.5, 0.2, 0.05]
+        # Dead zones are skipped when override is active
+        if not override:
+            dead_zone_remaining = self._dead_zone_remaining_s(now)
+            if dead_zone_remaining is not None:
+                return ("dead_stop", float(dead_zone_remaining))
+
+        if override or self.config.get("testing_mode", False):
+            weights = _OVERRIDE_WEIGHTS
         else:
             hour = now.hour
             weights = [

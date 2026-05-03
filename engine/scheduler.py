@@ -56,6 +56,8 @@ def run_engine(
             "persona": persona_name,
             "next_change_at": next_change_at,
             "time_until_dead_zone_s": selector.time_until_dead_zone_s(),
+            "override_active": selector._override_active(),
+            "override_expires_at": config.get("override", {}).get("expires_at"),
         })
 
         try:
