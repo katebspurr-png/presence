@@ -58,6 +58,7 @@ Pi Zero 2W
 | `run_portal.py` | WiFi setup portal entrypoint |
 | `setup/install.sh` | One-shot install script (run after git clone) |
 | `setup/enable-gadget.sh` | Configures USB HID gadget via ConfigFS |
+| `setup/enable-bluetooth-hid.sh` | Configures Pi as BT HID peripheral |
 | `setup/firstboot.sh` | Boot-time WiFi check; starts AP mode if not connected |
 | `presence.service` | systemd unit for engine |
 | `presence-pwa.service` | systemd unit for PWA |
@@ -96,6 +97,9 @@ Pi Zero 2W
 | `persona` | Active persona name |
 | `testing_mode` | `true` = flat peak weights at all hours (testing only) |
 | `hid_mode` | `"usb"` or `"bluetooth"` |
+| `override.active` | `true` = bypass time-of-day weights and dead zones |
+| `override.expires_at` | ISO timestamp when override auto-disables (null = indefinite) |
+| `forced_activity` | Lock engine to one activity type: `typing`, `mouse`, `idle` |
 | `dead_zones` | List of `{start, end, days}` meeting blocks |
 | `time_profiles` | 24-element hourly weight arrays per activity type |
 | `screen.width/height` | Must match work computer's display resolution |
@@ -104,12 +108,42 @@ Pi Zero 2W
 
 ---
 
+## PWA API Reference
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/status` | GET | Engine state, current activity, persona, override state |
+| `/api/start` | POST | Start engine |
+| `/api/stop` | POST | Stop engine |
+| `/api/pause` | POST | Pause/resume engine |
+| `/api/persona` | POST | Set active persona |
+| `/api/override` | GET | Get override state |
+| `/api/override` | POST | Enable override (`{duration_minutes: N}` or `{}` for indefinite) |
+| `/api/override` | DELETE | Disable override |
+| `/api/activity` | POST | Force activity type (`{activity: "typing\|mouse\|idle"}`) |
+| `/api/activity` | DELETE | Clear forced activity (back to auto) |
+| `/api/bluetooth` | GET/POST | Get/set HID mode (`usb` or `bluetooth`) |
+| `/api/bluetooth/discover` | POST | Make Pi discoverable for BT pairing |
+| `/api/settings` | GET/POST | Get/set screen resolution |
+| `/api/activity_log` | GET | Last 8 activity log entries |
+| `/api/dead_zones` | POST | Add dead zone |
+| `/api/dead_zones/<n>` | PUT/DELETE | Update/delete dead zone |
+
+---
+
+## PWA Keyboard Shortcut
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Shift+P` | Pause / resume engine |
+
+---
+
 ## Deployment
 
-**Pi location:** `192.168.4.146` (JoshuaTree WiFi)
-**SSH:** `pi@192.168.4.146` / password: `kate`
+**Pi SSH:** `pi@raspberrypi.local` (or by IP — check router device list)
 **Repo:** `github.com/katebspurr-png/presence`
-**Family Hub PWA:** `http://192.168.4.146:5000`
+**Family Hub PWA:** `http://<pi-ip>:5000`
 
 **Fresh install (after flashing SD card):**
 ```bash
@@ -118,6 +152,11 @@ git clone https://github.com/katebspurr-png/presence.git
 cd presence
 bash setup/install.sh
 sudo reboot
+```
+
+**After reboot — fix HID permissions (until udev rule is baked in):**
+```bash
+sudo chmod 666 /dev/hidg0 /dev/hidg1
 ```
 
 ---
@@ -133,32 +172,40 @@ sudo reboot
 
 ---
 
-## Current Status (2026-04-14)
+## Current Status (2026-05-03)
 
-- [x] Behavioral engine — fully implemented, 135 tests
+- [x] Behavioral engine — fully implemented, 156 tests
 - [x] Family Hub PWA — fully implemented
 - [x] USB HID gadget mode — working on Pi
 - [x] Pi deployed and running
 - [x] Claude API connected (typing with real content)
-- [ ] WiFi captive portal — code written, not yet tested
-- [ ] Bluetooth HID — planned, not yet implemented
-- [ ] Screen resolution config in PWA — not yet implemented
-- [ ] Customer packaging / documentation — not yet started
+- [x] Bluetooth HID architecture — implemented (L2CAP socket layer)
+- [x] Override mode — bypass time restrictions with optional timer
+- [x] Forced activity mode — lock engine to typing/mouse/idle from PWA
+- [x] Keyboard shortcut — Ctrl+Shift+P to pause/resume
+- [x] Screen resolution config in PWA
+- [x] BT mode switch in PWA
+- [ ] Bluetooth HID — needs D-Bus Profile1 socket fix (bluetoothd owns PSMs)
+- [ ] WiFi captive portal — code written, not yet tested end-to-end
+- [ ] WPM slider + screen size presets in PWA
+- [ ] README for end-to-end deployment
 
 ---
 
 ## Roadmap
 
 ### Next (immediate)
-1. Test WiFi captive portal (delete saved WiFi, reboot, verify `Presence-Setup` hotspot)
-2. Fix `testing_mode` sync between Pi and repo
-3. Bake udev rule into `install.sh`
+1. Bluetooth D-Bus Profile1 fix — let bluetoothd own PSMs, get socket via callback
+2. WPM slider in PWA — per-session typing speed override
+3. Screen size presets in PWA — MacBook Air, 1080p, 1440p buttons
 
 ### Near term
-4. Bluetooth HID — plan written at `docs/superpowers/plans/2026-04-14-bluetooth-hid.md`
-5. Screen resolution config in PWA
-6. README updates for end-to-end deployment
+4. Application focus simulation — some trackers log active app; Presence doesn't touch this
+5. Screenshot coverage — document that user should leave a realistic window open
+6. README for end-to-end deployment and customer setup
+7. WiFi captive portal end-to-end test
 
-### Longer term
-7. Customer packaging — clean install experience for non-technical users
-8. Dual-mode HID (USB + BT simultaneously) — out of scope for now
+### Product / longer term
+8. Customer packaging — clean install for non-technical users
+9. Idle detection gap — some tools flag no specific-app activity
+10. Dual-mode HID (USB + BT simultaneously)
